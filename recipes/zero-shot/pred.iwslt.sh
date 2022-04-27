@@ -4,8 +4,9 @@ set -eu
 
 
 export MOSES=~/opt/mosesdecoder
-export DATA_DIR= # path to tokenized test data
-export BASEDIR=	# path to model & orig data
+export DATA_DIR=~/export/data2/lcabrera/data/iwslt17_multiway/test/tok # path to tokenized test data
+export BASEDIR=~/export/data2/lcabrera	# path to model & orig data
+echo "BASEDIR:" $BASEDIR
 export name=$1 	# model name
 
 LAN="it nl ro en"
@@ -29,7 +30,7 @@ echo "Output: " $out
 bos='#'${tl^^}
 
 python3 -u $NMTDIR/translate.py -gpu $GPU \
-       -model $BASEDIR/model/$name/model.pt \
+       -model $BASEDIR/model/$name/iwslt.pt \
        -src $pred_src \
        -batch_size 128 -verbose \
        -beam_size 4 -alpha 1.0 \
@@ -54,3 +55,4 @@ fi
 
 done
 done
+
