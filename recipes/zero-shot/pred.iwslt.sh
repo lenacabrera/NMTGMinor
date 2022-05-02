@@ -1,11 +1,11 @@
 #!/bin/bash
-source ./recipe/zero-shot/config.sh
+source ./recipes/zero-shot/config.sh
 set -eu
 
 
 export MOSES=~/opt/mosesdecoder
-export DATA_DIR= # path to tokenized test data
-export BASEDIR=	# path to model & orig data
+export DATA_DIR=~/export/data2/lcabrera/data/iwslt17_multiway/test/tok # path to tokenized test data
+export BASEDIR=~/export/data2/lcabrera	# path to model & orig data
 export name=$1 	# model name
 
 LAN="it nl ro en"
@@ -29,7 +29,7 @@ echo "Output: " $out
 bos='#'${tl^^}
 
 python3 -u $NMTDIR/translate.py -gpu $GPU \
-       -model $BASEDIR/model/$name/model.pt \
+       -model $BASEDIR/model/$name/iwslt.pt \
        -src $pred_src \
        -batch_size 128 -verbose \
        -beam_size 4 -alpha 1.0 \
@@ -48,8 +48,9 @@ python3 -u $NMTDIR/translate.py -gpu $GPU \
 	
 	echo '===========================================' $sl $tl
 	# Evaluate against original reference  
-	cat $out.pt | sacrebleu $BASEDIR/data/orig/eval/tst2017$sl-$tl.real/tst2017$sl-$tl.real.$tl
-	cat $out.pt | sacrebleu $BASEDIR/data/orig/eval/tst2017$sl-$tl.real/tst2017$sl-$tl.real.$tl > $BASEDIR/data/$name/$sl-$tl.test.res
+        cat $out.pt | sacrebleu $BASEDIR/data/iwslt17_multiway/test/orig/tst2017$tl-$sl.$tl > $BASEDIR/data/$name/$sl-$tl.test.res
+        cat $BASEDIR/data/$name/$sl-$tl.test.res
+        
 fi
 
 done

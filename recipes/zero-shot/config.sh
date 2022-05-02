@@ -4,11 +4,11 @@ PERL_LOCAL_LIB_ROOT="$HOME/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"
 PERL_MB_OPT="--install_base \"$HOME/perl5\""; export PERL_MB_OPT;
 PERL_MM_OPT="INSTALL_BASE=$HOME/perl5"; export PERL_MM_OPT;
 
-export HERE=~/
+export HERE=~
 export MOSESDIR=$HERE/opt/mosesdecoder
 export BPEDIR=$HERE/opt/subword-nmt
-export NMTDIR=../../
-export SCRIPTDIR=$NMTDIR/scripts
+export NMTDIR=$HERE/NMTGMinor #../../
+export SCRIPTDIR=$NMTDIR/recipes/zero-shot #$NMTDIR/scripts
 export PYTHON3=python3
 export GPU=0
 
@@ -17,4 +17,4 @@ export WORKDIR=$HERE/data/lrt
 
 echo 'Source: ' $NMTDIR
 
-cd -
+#cd -
