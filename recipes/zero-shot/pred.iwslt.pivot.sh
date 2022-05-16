@@ -1,82 +1,77 @@
-#!/bin/bash
-source ./recipes/zero-shot/config.sh
-set -eu
-
-
-export MOSES=~/opt/mosesdecoder
-export DATA_DIR=~/export/data2/lcabrera/data/iwslt17_multiway/test/tok # path to tokenized test data
+export MODEL=$1
 export BASEDIR=~/export/data2/lcabrera	# path to model & orig data
-export name=$1 	# model name
 
-LAN="it nl ro"
-pl="en"
+mkdir $BASEDIR/data/$MODEL/pivot -p
 
-mkdir $BASEDIR/data/$name -p
+# IWSLT languages
+langs="it nl ro"
 
-# 1. source -> EN
-for sl in $LAN; do
-for tl in $LAN; do
+for src in $langs
+do
+    for tgt in $langs
+    do
+        if [ $src != $tgt ]; then
 
-if [[ ! "$sl" == "$tl" ]]; then
+            echo $src " -> en -> " $tgt
 
-pred_src=$DATA_DIR/tst2017$sl-$pl.real.s
+                # (1) pivot into English
+                export sl=$src
+                export tl=en
 
-echo $pred_src
+                ln -s -f $BASEDIR/data/iwslt17_multiway/test/tok/tst2017${src}-${tgt}.real.s  $BASEDIR/data/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.s # symbolic link
+                
+                pred_src=$BASEDIR/data/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.s
+                out=$BASEDIR/data/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.t
 
-p_out=$BASEDIR/data/$name/$sl-$pl.pred
-out=$BASEDIR/data/$name/$pl-$tl.pred
+                bos='#'${tl^^}
 
-echo "Input:" $pred_src 
-echo "Pivot output: " $p_out
-echo "Output: " $out
+                echo "Translate to EN..."
+                python3 -u $NMTDIR/translate.py -gpu $GPU \
+                    -model $BASEDIR/model/$MODEL/iwslt.pt \
+                    -src $pred_src \
+                    -batch_size 128 -verbose \
+                    -beam_size 4 -alpha 1.0 \
+                    -normalize \
+                    -output $out \
+                    -fast_translate \
+                    -src_lang $sl \
+                    -tgt_lang $tl \
+                    -bos_token $bos
 
-bos='#'${pl^^}
+                # (2) pivot out of English
+                export sl=en
+                export tl=$tgt
 
-python3 -u $NMTDIR/translate.py -gpu $GPU \
-        -model $BASEDIR/model/baseline/iwslt.pt \
-        -src $pred_src \
-        -batch_size 128 -verbose \
-        -beam_size 4 -alpha 1.0 \
-        -normalize \
-        -output $p_out \
-        -fast_translate \
-        -src_lang $sl \
-        -tgt_lang $pl \
-        -bos_token $bos
+                ln -s -f $BASEDIR/data/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.t $BASEDIR/data/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotout.s
 
-# postprocess output
-sed -e "s/@@ //g" $p_out  | sed -e "s/@@$//g" | sed -e "s/&apos;/'/g" -e 's/&#124;/|/g' -e "s/&amp;/&/g" -e 's/&lt;/>/g' -e 's/&gt;/>/g' -e 's/&quot;/"/g' -e 's/&#91;/[/g' -e 's/&#93;/]/g' -e 's/ - /-/g' | sed -e "s/ '/'/g" | sed -e "s/ '/'/g" | sed -e "s/%- / -/g" | sed -e "s/ -%/- /g" | perl -nle 'print ucfirst' > $p_out.tok
+                pred_src=$BASEDIR/data/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotout.s
+                out=$BASEDIR/data/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotout.t
 
-$MOSESDIR/scripts/tokenizer/detokenizer.perl -l $pl < $p_out.tok > $p_out.detok
-$MOSESDIR/scripts/recaser/detruecase.perl < $p_out.detok > $p_out.pt
+                bos='#'${tl^^}
 
-# 2. EN -> target
-bos='#'${tl^^}
+                echo "Translate from EN..."
+                python3 -u $NMTDIR/translate.py -gpu $GPU \
+                    -model $BASEDIR/model/$MODEL/iwslt.pt \
+                    -src $pred_src \
+                    -batch_size 128 -verbose \
+                    -beam_size 4 -alpha 1.0 \
+                    -normalize \
+                    -output $out \
+                    -fast_translate \
+                    -src_lang $sl \
+                    -tgt_lang $tl \
+                    -bos_token $bos
+    
+                sed -e "s/@@ //g" $out  | sed -e "s/@@$//g" | sed -e "s/&apos;/'/g" -e 's/&#124;/|/g' -e "s/&amp;/&/g" -e 's/&lt;/>/g' -e 's/&gt;/>/g' -e 's/&quot;/"/g' -e 's/&#91;/[/g' -e 's/&#93;/]/g' -e 's/ - /-/g' | sed -e "s/ '/'/g" | sed -e "s/ '/'/g" | sed -e "s/%- / -/g" | sed -e "s/ -%/- /g" | perl -nle 'print ucfirst' > $out.tok
 
-python3 -u $NMTDIR/translate.py -gpu $GPU \
-       -model $BASEDIR/model/baseline/iwslt.pt \
-       -src $p_out \
-       -batch_size 128 -verbose \
-       -beam_size 4 -alpha 1.0 \
-       -normalize \
-       -output $out \
-       -fast_translate \
-       -src_lang $pl \
-       -tgt_lang $tl \
-       -bos_token $bos
-
-        # postprocess output
-        sed -e "s/@@ //g" $out  | sed -e "s/@@$//g" | sed -e "s/&apos;/'/g" -e 's/&#124;/|/g' -e "s/&amp;/&/g" -e 's/&lt;/>/g' -e 's/&gt;/>/g' -e 's/&quot;/"/g' -e 's/&#91;/[/g' -e 's/&#93;/]/g' -e 's/ - /-/g' | sed -e "s/ '/'/g" | sed -e "s/ '/'/g" | sed -e "s/%- / -/g" | sed -e "s/ -%/- /g" | perl -nle 'print ucfirst' > $out.tok
-
-        $MOSESDIR/scripts/tokenizer/detokenizer.perl -l $tl < $out.tok > $out.detok
-        $MOSESDIR/scripts/recaser/detruecase.perl < $out.detok > $out.pt
-	
-        echo '===========================================' $sl $pl $tl
-        # Evaluate against original reference  
-        cat $out.pt | sacrebleu $BASEDIR/data/iwslt17_multiway/test/orig/tst2017$tl-$sl.$tl > $BASEDIR/data/$name/$sl-$tl.test.res
-        cat $BASEDIR/data/$name/$sl-$tl.test.res
-            
-fi
-
+                $MOSESDIR/scripts/tokenizer/detokenizer.perl -l $tl < $out.tok > $out.detok
+                $MOSESDIR/scripts/recaser/detruecase.perl < $out.detok > $out.pt
+                
+                rm $out.tok $out.detok
+                # cat $out.pt | sacrebleu $BASEDIR/data/iwslt17_multiway/test/orig/tst2017$src-$tgt.real/tst2017$src-$tgt.real.$tgt > $out.res
+                cat $out.pt | sacrebleu $BASEDIR/data/iwslt17_multiway/test/orig/tst2017$tgt-$src.$tgt > $out.res
+ 
+        fi
+    done
 done
-done
+
