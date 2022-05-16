@@ -2,56 +2,44 @@
 source ./recipes/zero-shot/config.sh
 set -eu
 
-
-export MOSES=~/opt/mosesdecoder
-export DATA_DIR=~/export/data2/lcabrera/data/iwslt17_multiway/test/tok # path to tokenized test data
-export BASEDIR=~/export/data2/lcabrera	# path to model & orig data
-export name=$1 	# model name
+export MODEL=$1 # model name
 
 LAN="it nl ro en"
 
-mkdir $BASEDIR/data/$name -p
+mkdir $DATADIR/$MODEL -p
 
 for sl in $LAN; do
-for tl in $LAN; do
+    for tl in $LAN; do
+        if [[ ! "$sl" == "$tl" ]]; then
 
-if [[ ! "$sl" == "$tl" ]]; then
+            pred_src=$DATADIR/iwslt17_multiway/test/tok/tst2017$sl-$tl.real.s # path to tokenized test data
+            out=$DATADIR/$MODEL/$sl-$tl.pred
 
-pred_src=$DATA_DIR/tst2017$sl-$tl.real.s
+            bos='#'${tl^^}
 
-echo $pred_src
-
-out=$BASEDIR/data/$name/$sl-$tl.pred
-
-echo "Input:" $pred_src 
-echo "Output: " $out
-
-bos='#'${tl^^}
-
-python3 -u $NMTDIR/translate.py -gpu $GPU \
-       -model $BASEDIR/model/$name/iwslt.pt \
-       -src $pred_src \
-       -batch_size 128 -verbose \
-       -beam_size 4 -alpha 1.0 \
-       -normalize \
-       -output $out \
-       -fast_translate \
-       -src_lang $sl \
-       -tgt_lang $tl \
-       -bos_token $bos
-
-        # postprocess output
-        sed -e "s/@@ //g" $out  | sed -e "s/@@$//g" | sed -e "s/&apos;/'/g" -e 's/&#124;/|/g' -e "s/&amp;/&/g" -e 's/&lt;/>/g' -e 's/&gt;/>/g' -e 's/&quot;/"/g' -e 's/&#91;/[/g' -e 's/&#93;/]/g' -e 's/ - /-/g' | sed -e "s/ '/'/g" | sed -e "s/ '/'/g" | sed -e "s/%- / -/g" | sed -e "s/ -%/- /g" | perl -nle 'print ucfirst' > $out.tok
-
-        $MOSESDIR/scripts/tokenizer/detokenizer.perl -l $tl < $out.tok > $out.detok
-        $MOSESDIR/scripts/recaser/detruecase.perl < $out.detok > $out.pt
-	
-	echo '===========================================' $sl $tl
-	# Evaluate against original reference  
-        cat $out.pt | sacrebleu $BASEDIR/data/iwslt17_multiway/test/orig/tst2017$tl-$sl.$tl > $BASEDIR/data/$name/$sl-$tl.test.res
-        cat $BASEDIR/data/$name/$sl-$tl.test.res
+            python3 -u $NMTDIR/translate.py -gpu $GPU \
+            -model $WORKDIR/model/$MODEL/iwslt.pt \
+            -src $pred_src \
+            -batch_size 128 -verbose \
+            -beam_size 4 -alpha 1.0 \
+            -normalize \
+            -output $out \
+            -fast_translate \
+            -src_lang $sl \
+            -tgt_lang $tl \
+            -bos_token $bos
+            
+            # Postprocess output
+            sed -e "s/@@ //g" $out  | sed -e "s/@@$//g" | sed -e "s/&apos;/'/g" -e 's/&#124;/|/g' -e "s/&amp;/&/g" -e 's/&lt;/>/g' -e 's/&gt;/>/g' -e 's/&quot;/"/g' -e 's/&#91;/[/g' -e 's/&#93;/]/g' -e 's/ - /-/g' | sed -e "s/ '/'/g" | sed -e "s/ '/'/g" | sed -e "s/%- / -/g" | sed -e "s/ -%/- /g" | perl -nle 'print ucfirst' > $out.tok
+            
+            $MOSESDIR/scripts/tokenizer/detokenizer.perl -l $tl < $out.tok > $out.detok
+            $MOSESDIR/scripts/recaser/detruecase.perl < $out.detok > $out.pt
         
-fi
-
-done
+            echo '===========================================' $sl $tl
+            # Evaluate against original reference  
+            cat $out.pt | sacrebleu $DATADIR/iwslt17_multiway/test/orig/tst2017$tl-$sl.$tl > $OUTDIR/$MODEL/$sl-$tl.test.res
+            cat $OUTDIR/$MODEL/$sl-$tl.test.res
+        
+        fi
+    done
 done

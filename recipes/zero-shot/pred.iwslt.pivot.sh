@@ -1,7 +1,7 @@
 export MODEL=$1
-export BASEDIR=~/export/data2/lcabrera	# path to model & orig data
 
-mkdir $BASEDIR/data/$MODEL/pivot -p
+mkdir $DATADIR/$MODEL/pivot -p
+mkdir $OUTDIR/$MODEL/pivot -p
 
 # IWSLT languages
 langs="it nl ro"
@@ -18,16 +18,16 @@ do
                 export sl=$src
                 export tl=en
 
-                ln -s -f $BASEDIR/data/iwslt17_multiway/test/tok/tst2017${src}-${tgt}.real.s  $BASEDIR/data/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.s # symbolic link
+                ln -s -f $DATADIR/iwslt17_multiway/test/tok/tst2017${src}-${tgt}.real.s  $OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.s # symbolic link
                 
-                pred_src=$BASEDIR/data/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.s
-                out=$BASEDIR/data/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.t
+                pred_src=$OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.s
+                out=$OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.t
 
                 bos='#'${tl^^}
 
                 echo "Translate to EN..."
                 python3 -u $NMTDIR/translate.py -gpu $GPU \
-                    -model $BASEDIR/model/$MODEL/iwslt.pt \
+                    -model $WORKDIR/model/$MODEL/iwslt.pt \
                     -src $pred_src \
                     -batch_size 128 -verbose \
                     -beam_size 4 -alpha 1.0 \
@@ -42,16 +42,16 @@ do
                 export sl=en
                 export tl=$tgt
 
-                ln -s -f $BASEDIR/data/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.t $BASEDIR/data/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotout.s
+                ln -s -f $OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.t $OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotout.s
 
-                pred_src=$BASEDIR/data/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotout.s
-                out=$BASEDIR/data/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotout.t
+                pred_src=$OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotout.s
+                out=$OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotout.t
 
                 bos='#'${tl^^}
 
                 echo "Translate from EN..."
                 python3 -u $NMTDIR/translate.py -gpu $GPU \
-                    -model $BASEDIR/model/$MODEL/iwslt.pt \
+                    -model $WORKDIR/model/$MODEL/iwslt.pt \
                     -src $pred_src \
                     -batch_size 128 -verbose \
                     -beam_size 4 -alpha 1.0 \
@@ -68,8 +68,7 @@ do
                 $MOSESDIR/scripts/recaser/detruecase.perl < $out.detok > $out.pt
                 
                 rm $out.tok $out.detok
-                # cat $out.pt | sacrebleu $BASEDIR/data/iwslt17_multiway/test/orig/tst2017$src-$tgt.real/tst2017$src-$tgt.real.$tgt > $out.res
-                cat $out.pt | sacrebleu $BASEDIR/data/iwslt17_multiway/test/orig/tst2017$tgt-$src.$tgt > $out.res
+                cat $out.pt | sacrebleu $DATADIR/iwslt17_multiway/test/orig/tst2017$tgt-$src.$tgt > $out.res
  
         fi
     done

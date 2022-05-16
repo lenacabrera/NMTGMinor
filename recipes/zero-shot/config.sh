@@ -5,16 +5,18 @@ PERL_MB_OPT="--install_base \"$HOME/perl5\""; export PERL_MB_OPT;
 PERL_MM_OPT="INSTALL_BASE=$HOME/perl5"; export PERL_MM_OPT;
 
 export HERE=~
-export MOSESDIR=$HERE/opt/mosesdecoder
-export BPEDIR=$HERE/opt/subword-nmt
 export NMTDIR=$HERE/NMTGMinor #../../
 export SCRIPTDIR=$NMTDIR/recipes/zero-shot #$NMTDIR/scripts
+export WORKDIR=$HERE/export/data2/lcabrera
+export DATADIR=$HERE/export/data2/lcabrera/data
+export OUTDIR=$HERE/export/data2/lcabrera/output
+
+export OPTDIR=$HERE/opt
+export MOSESDIR=$OPTDIR/mosesdecoder
+export BPEDIR=$OPTDIR/subword-nmt
+export FLORESDIR=$OPTDIR/flores
+
 export PYTHON3=python3
 export GPU=0
-
-export FLORESDIR=$HERE/opt/flores/
-export WORKDIR=$HERE/data/lrt
-
-echo 'Source: ' $NMTDIR
 
 #cd -
