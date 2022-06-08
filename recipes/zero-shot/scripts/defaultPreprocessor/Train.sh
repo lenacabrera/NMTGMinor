@@ -25,119 +25,123 @@ if [ -z "$PARA" ]; then
 fi
 
 
-input=$1
-name=$2
-echo $PARA
+input=$1 	# systemName
+name=$2 	# $PREPRO_DIR
+
+BASEDIR=$WORKDIR/data/$input
 
 mkdir -p $BASEDIR/tmp/${name}/tok/train
 mkdir -p $BASEDIR/tmp/${name}/tok/valid
 mkdir -p $BASEDIR/tmp/${name}/sc/train
 mkdir -p $BASEDIR/tmp/${name}/sc/valid
-mkdir -p $BASEDIR/model/${name}
-mkdir -p $BASEDIR/data/${name}/train
-mkdir -p $BASEDIR/data/${name}/valid
+mkdir -p $WORKDIR/model/${name}
+mkdir -p $BASEDIR/${name}/train
+mkdir -p $BASEDIR/${name}/valid
 
+
+### (1) TOKENIZATION 
 echo "*** Tokenization" 
-#Source
+
+## Source
 echo "" > $BASEDIR/tmp/${name}/corpus.tok.s
 
-for f in $BASEDIR/data/${input}/$PARA/*\.s
-do
-### train
-lan_pair="$(basename "$f")"
-sl=${lan_pair:0:2}
-if [ "$sl" != 'ml' ] && [ "$sl" != 'te' ]  && [ "$sl" != 'kn' ] && [ "$sl" != 'ta' ] && [ "$sl" != 'bn' ] && [ "$sl" != 'gu' ] && [ "$sl" != 'hi' ] && [ "$sl" != 'mr' ] && [ "$sl" != 'or' ] && [ "$sl" != 'pa' ]; then
-	cat $f | perl $MOSESDIR/scripts/tokenizer/tokenizer.perl -l ${sl} > $BASEDIR/tmp/${name}/tok/train/${f##*/}
-#	cat $BASEDIR/tmp/${name}/tok/train/${f##*/} >> $BASEDIR/tmp/${name}/corpus.tok.s
-else
-	echo '*** Using indic tokenizer for src' $f
-	$INDIC_TOKENIZER ${sl} $f > $BASEDIR/tmp/${name}/tok/train/${f##*/}
-#	cat $BASEDIR/tmp/${name}/tok/train/${f##*/} >> $BASEDIR/tmp/${name}/corpus.tok.s
-fi
-cat $BASEDIR/tmp/${name}/tok/train/${f##*/} >> $BASEDIR/tmp/${name}/corpus.tok.s
+# Train
+for f in $BASEDIR/raw/train/*\.s
+    do
+    lan_pair="$(basename "$f")"
+    sl=${lan_pair:0:2}
+    if [ "$sl" != 'ml' ] && [ "$sl" != 'te' ]  && [ "$sl" != 'kn' ] && [ "$sl" != 'ta' ] && [ "$sl" != 'bn' ] && [ "$sl" != 'gu' ] && [ "$sl" != 'hi' ] && [ "$sl" != 'mr' ] && [ "$sl" != 'or' ] && [ "$sl" != 'pa' ]; then
+        cat $f | perl $MOSESDIR/scripts/tokenizer/tokenizer.perl -l ${sl} > $BASEDIR/tmp/${name}/tok/train/${f##*/}
+    else
+        echo '*** Using indic tokenizer for src' $f
+        $INDIC_TOKENIZER ${sl} $f > $BASEDIR/tmp/${name}/tok/train/${f##*/}
+    fi
+    cat $BASEDIR/tmp/${name}/tok/train/${f##*/} >> $BASEDIR/tmp/${name}/corpus.tok.s
 done
-### valid
-for f in $BASEDIR/data/${input}/valid/*\.s
-do
-lan_pair="$(basename "$f")"
-sl=${lan_pair:0:2}
-if [ "$sl" != 'ml' ] && [ "$sl" != 'te' ]  && [ "$sl" != 'kn' ] && [ "$sl" != 'ta' ] && [ "$sl" != 'bn' ] && [ "$sl" != 'gu' ] && [ "$sl" != 'hi' ] && [ "$sl" != 'mr' ] && [ "$sl" != 'or' ] && [ "$sl" != 'pa' ]; then
-	cat $f | perl $MOSESDIR/scripts/tokenizer/tokenizer.perl -l ${sl} > $BASEDIR/tmp/${name}/tok/valid/${f##*/}
-else
-	echo '*** Using indic tokenizer for src' $f
-	$INDIC_TOKENIZER ${sl} $f > $BASEDIR/tmp/${name}/tok/valid/${f##*/}
-fi
+# Valid
+for f in $BASEDIR/raw/valid/*\.s
+    do
+    lan_pair="$(basename "$f")"
+    sl=${lan_pair:0:2}
+    if [ "$sl" != 'ml' ] && [ "$sl" != 'te' ]  && [ "$sl" != 'kn' ] && [ "$sl" != 'ta' ] && [ "$sl" != 'bn' ] && [ "$sl" != 'gu' ] && [ "$sl" != 'hi' ] && [ "$sl" != 'mr' ] && [ "$sl" != 'or' ] && [ "$sl" != 'pa' ]; then
+        cat $f | perl $MOSESDIR/scripts/tokenizer/tokenizer.perl -l ${sl} > $BASEDIR/tmp/${name}/tok/valid/${f##*/}
+    else
+        echo '*** Using indic tokenizer for src' $f
+        $INDIC_TOKENIZER ${sl} $f > $BASEDIR/tmp/${name}/tok/valid/${f##*/}
+    fi
 done
 
-#Target
+## Target
 echo "" > $BASEDIR/tmp/${name}/corpus.tok.t
-### train
-for f in $BASEDIR/data/${input}/$PARA/*\.t
-do
-lan_pair="$(basename "$f")"
-tl=${lan_pair:3:2}
-if [ "$tl" != 'ml' ] && [ "$tl" != 'te' ]  && [ "$tl" != 'kn' ] && [ "$tl" != 'ta' ] && [ "$tl" != 'bn' ] && [ "$tl" != 'gu' ] && [ "$tl" != 'hi' ] && [ "$tl" != 'mr' ] && [ "$tl" != 'or' ] && [ "$tl" != 'pa' ]; then
-	cat $f | perl $MOSESDIR/scripts/tokenizer/tokenizer.perl -l ${tl} > $BASEDIR/tmp/${name}/tok/train/${f##*/}
-#	cat $BASEDIR/tmp/${name}/tok/train/${f##*/} >> $BASEDIR/tmp/${name}/corpus.tok.t
-else
-	echo '*** Using indic tokenizer for tgt' $f
-	$INDIC_TOKENIZER ${tl} $f > $BASEDIR/tmp/${name}/tok/train/${f##*/}
-fi
-cat $BASEDIR/tmp/${name}/tok/train/${f##*/} >> $BASEDIR/tmp/${name}/corpus.tok.t
-done
-### valid
-for f in $BASEDIR/data/${input}/valid/*\.t
-do
-lan_pair="$(basename "$f")"
-tl=${lan_pair:3:2}
-if [ "$tl" != 'ml' ] && [ "$tl" != 'te' ]  && [ "$tl" != 'kn' ] && [ "$tl" != 'ta' ] && [ "$tl" != 'bn' ] && [ "$tl" != 'gu' ] && [ "$tl" != 'hi' ] && [ "$tl" != 'mr' ] && [ "$tl" != 'or' ] && [ "$tl" != 'pa' ]; then
-	cat $f | perl $MOSESDIR/scripts/tokenizer/tokenizer.perl -l ${tl} > $BASEDIR/tmp/${name}/tok/valid/${f##*/}
-else
-	echo '*** Using indic tokenizer for tgt' $f
-        $INDIC_TOKENIZER ${tl} $f > $BASEDIR/tmp/${name}/tok/valid/${f##*/}
-fi
+
+# Train
+for f in $BASEDIR/raw/train/*\.t
+    do
+    lan_pair="$(basename "$f")"
+    tl=${lan_pair:3:2}
+    if [ "$tl" != 'ml' ] && [ "$tl" != 'te' ]  && [ "$tl" != 'kn' ] && [ "$tl" != 'ta' ] && [ "$tl" != 'bn' ] && [ "$tl" != 'gu' ] && [ "$tl" != 'hi' ] && [ "$tl" != 'mr' ] && [ "$tl" != 'or' ] && [ "$tl" != 'pa' ]; then
+        cat $f | perl $MOSESDIR/scripts/tokenizer/tokenizer.perl -l ${tl} > $BASEDIR/tmp/${name}/tok/train/${f##*/}
+    else
+        echo '*** Using indic tokenizer for tgt' $f
+        $INDIC_TOKENIZER ${tl} $f > $BASEDIR/tmp/${name}/tok/train/${f##*/}
+    fi
+    cat $BASEDIR/tmp/${name}/tok/train/${f##*/} >> $BASEDIR/tmp/${name}/corpus.tok.t
 done
 
-##SMARTCASE
+# Valid
+for f in $BASEDIR/raw/valid/*\.t
+    do
+    lan_pair="$(basename "$f")"
+    tl=${lan_pair:3:2}
+    if [ "$tl" != 'ml' ] && [ "$tl" != 'te' ]  && [ "$tl" != 'kn' ] && [ "$tl" != 'ta' ] && [ "$tl" != 'bn' ] && [ "$tl" != 'gu' ] && [ "$tl" != 'hi' ] && [ "$tl" != 'mr' ] && [ "$tl" != 'or' ] && [ "$tl" != 'pa' ]; then
+        cat $f | perl $MOSESDIR/scripts/tokenizer/tokenizer.perl -l ${tl} > $BASEDIR/tmp/${name}/tok/valid/${f##*/}
+    else
+        echo '*** Using indic tokenizer for tgt' $f
+            $INDIC_TOKENIZER ${tl} $f > $BASEDIR/tmp/${name}/tok/valid/${f##*/}
+    fi
+done
+
+### (2) SMARTCASE
 echo "*** Learning Truecaser" 
+
+## Source
 if [ "$SRC_INDIC" != true ]; then
-$MOSESDIR/scripts/recaser/train-truecaser.perl --model $BASEDIR/model/${name}/truecase-model.s --corpus $BASEDIR/tmp/${name}/corpus.tok.s
-fi
-
-$MOSESDIR/scripts/recaser/train-truecaser.perl --model $BASEDIR/model/${name}/truecase-model.t --corpus $BASEDIR/tmp/${name}/corpus.tok.t
-
-if [ "$SRC_INDIC" != true ]; then
-for set in valid train
-do
-for f in $BASEDIR/tmp/${name}/tok/$set/*\.s
-do
-cat $f | $MOSESDIR/scripts/recaser/truecase.perl --model $BASEDIR/model/${name}/truecase-model.s > $BASEDIR/tmp/${name}/sc/$set/${f##*/}
-done
-done
-
+    # train
+    $MOSESDIR/scripts/recaser/train-truecaser.perl --model $WORKDIR/model/${name}/truecase-model.s --corpus $BASEDIR/tmp/${name}/corpus.tok.s
+    # apply
+    for set in valid train
+        do
+            for f in $BASEDIR/tmp/${name}/tok/$set/*\.s
+                do
+                cat $f | $MOSESDIR/scripts/recaser/truecase.perl --model $WORKDIR/model/${name}/truecase-model.s > $BASEDIR/tmp/${name}/sc/$set/${f##*/}
+        done
+    done
 else # skip smartcasing
-for set in valid train
-do
-for f in $BASEDIR/tmp/${name}/tok/$set/*\.s
-do
-cat $f > $BASEDIR/tmp/${name}/sc/$set/${f##*/}
-done
-done
-
+    for set in valid train
+        do
+        for f in $BASEDIR/tmp/${name}/tok/$set/*\.s
+            do
+            cat $f > $BASEDIR/tmp/${name}/sc/$set/${f##*/}
+        done
+    done
 fi
-
-for set in valid train
-do
-for f in $BASEDIR/tmp/${name}/tok/$set/*\.t
-do
-cat $f | $MOSESDIR/scripts/recaser/truecase.perl --model $BASEDIR/model/${name}/truecase-model.t > $BASEDIR/tmp/${name}/sc/$set/${f##*/}
-done
-done
 
 echo "" > $BASEDIR/tmp/${name}/corpus.sc.s
 for f in $BASEDIR/tmp/${name}/sc/train/*\.s
-do
-cat $f >> $BASEDIR/tmp/${name}/corpus.sc.s
+    do
+    cat $f >> $BASEDIR/tmp/${name}/corpus.sc.s
+done
+
+## Target
+# train
+$MOSESDIR/scripts/recaser/train-truecaser.perl --model $WORKDIR/model/${name}/truecase-model.t --corpus $BASEDIR/tmp/${name}/corpus.tok.t
+# apply
+for set in valid train
+    do
+    for f in $BASEDIR/tmp/${name}/tok/$set/*\.t
+        do
+        cat $f | $MOSESDIR/scripts/recaser/truecase.perl --model $WORKDIR/model/${name}/truecase-model.t > $BASEDIR/tmp/${name}/sc/$set/${f##*/}
+    done
 done
 
 echo "" > $BASEDIR/tmp/${name}/corpus.sc.t
@@ -146,49 +150,53 @@ do
 cat $f >> $BASEDIR/tmp/${name}/corpus.sc.t
 done
 
-#BPE
+### (3) BPE
 echo "*** Learning BPE of size" $BPESIZE
 if [ ! "$SENTENCE_PIECE" == true ]; then
+    # using subword-nmt 
 	echo "*** BPE by subword-nmt"
-	$BPEDIR/subword_nmt/learn_joint_bpe_and_vocab.py --input $BASEDIR/tmp/${name}/corpus.sc.s $BASEDIR/tmp/${name}/corpus.sc.t -s $BPESIZE -o $BASEDIR/model/${name}/codec --write-vocabulary $BASEDIR/model/${name}/voc.s $BASEDIR/model/${name}/voc.t
+	$BPEDIR/subword_nmt/learn_joint_bpe_and_vocab.py --input $BASEDIR/tmp/${name}/corpus.sc.s $BASEDIR/tmp/${name}/corpus.sc.t -s $BPESIZE -o $WORKDIR/model/${name}/codec --write-vocabulary $WORKDIR/model/${name}/voc.s $WORKDIR/model/${name}/voc.t
 
+    ## Source
 	for set in valid train
-	do
+	    do
 		for f in $BASEDIR/tmp/${name}/sc/$set/*\.s
-		do
-		echo $f
-		$BPEDIR/subword_nmt/apply_bpe.py -c $BASEDIR/model/${name}/codec --vocabulary $BASEDIR/model/${name}/voc.s --vocabulary-threshold 50 < $f > $BASEDIR/data/${name}/$set/${f##*/}
+            do
+            echo $f
+            $BPEDIR/subword_nmt/apply_bpe.py -c $WORKDIR/model/${name}/codec --vocabulary $WORKDIR/model/${name}/voc.s --vocabulary-threshold 50 < $f > $BASEDIR/${name}/$set/${f##*/}
 		done
 	done
 
+    ## Target
 	for set in valid train
-	do
+	    do
 		for f in $BASEDIR/tmp/${name}/sc/$set/*\.t
-		do
-		echo $f
-		$BPEDIR/subword_nmt/apply_bpe.py -c $BASEDIR/model/${name}/codec --vocabulary $BASEDIR/model/${name}/voc.t --vocabulary-threshold 50 < $f > $BASEDIR/data/${name}/$set/${f##*/}
+            do
+            echo $f
+            $BPEDIR/subword_nmt/apply_bpe.py -c $WORKDIR/model/${name}/codec --vocabulary $WORKDIR/model/${name}/voc.t --vocabulary-threshold 50 < $f > $BASEDIR/${name}/$set/${f##*/}
 		done
 	done
 
 else
+    # using SentencePiece
 	echo "*** BPE by sentencepiece"
 	spm_train \
 	--input=$BASEDIR/tmp/${name}/corpus.sc.s,$BASEDIR/tmp/${name}/corpus.sc.t \
-        --model_prefix=$BASEDIR/data/${name}/sentencepiece.bpe \
+        --model_prefix=$BASEDIR/${name}/sentencepiece.bpe \
         --vocab_size=$BPESIZE \
         --character_coverage=1.0 \
         --model_type=bpe
 	for set in valid train
-	do
+	    do
 		for f in $BASEDIR/tmp/${name}/sc/$set/* #\.s
 		do
 		echo $f
 		spm_encode \
-        	--model=$BASEDIR/data/${name}/sentencepiece.bpe.model \
+        	--model=$BASEDIR/${name}/sentencepiece.bpe.model \
         	--output_format=piece \
-		--vocabulary_threshold 50 < $f > $BASEDIR/data/${name}/$set/${f##*/}
+		--vocabulary_threshold 50 < $f > $BASEDIR/${name}/$set/${f##*/}
 		done
 	done
 fi
 
-rm -r $BASEDIR/tmp/${name}/
+rm -r $BASEDIR/tmp

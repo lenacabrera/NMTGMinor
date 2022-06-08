@@ -1,11 +1,17 @@
 name=baseline
 input=prepro_40000_sentencepiece
 
-S_LAN="bn|en|en|en|en|en|en|en|en|en|gu|hi|kn|ml|mr|or|pa|te" # has to be sorted alphabetically
-T_LAN="en|bn|gu|hi|kn|ml|mr|or|pa|te|en|en|en|en|en|en|en|en"
+# S_LAN="bn|en|en|en|en|en|en|en|en|en|gu|hi|kn|ml|mr|or|pa|te" # has to be sorted alphabetically
+# T_LAN="en|bn|gu|hi|kn|ml|mr|or|pa|te|en|en|en|en|en|en|en|en"
+
+S_LAN="en|en|en|it|nl|ro" # has to be sorted alphabetically
+T_LAN="it|nl|ro|en|en|en"
 
 IFS='|' read -r -a arrayS <<< $S_LAN
 IFS='|' read -r -a arrayT <<< $T_LAN
+
+BASEDIR=$WORKDIR
+echo $BASEDIR
 
 rm -r $BASEDIR/tmp/${name}
 mkdir $BASEDIR/tmp/${name} -p
@@ -16,6 +22,7 @@ mkdir $datadir -p
 # for each language pair, e.g. (hi, en), (ne, en)
 for l in s t
 do
+echo $l
     for set in train valid
     do
         # loop through language pairs
@@ -44,10 +51,11 @@ python3 $NMTDIR/preprocess.py \
        -train_tgt_lang $T_LAN \
        -valid_src_lang $S_LAN \
        -valid_tgt_lang $T_LAN \
-       -save_data $datadir -format bin \
+       -save_data $datadir \
        -src_seq_length 512 \
        -tgt_seq_length 512 \
        -join_vocab \
        -no_bos \
        -num_threads 16 \
        -format mmem
+        

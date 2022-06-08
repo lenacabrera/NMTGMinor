@@ -2,8 +2,10 @@
 
 # Note these configurations:
 # - shared src tgt vocabulary
-# - language embedding on decoder input (to force correct language), addtive or concatenative
+# - language embedding on decoder input (to force correct language), additive or concatenative
 # - Tgt language token replaces normal BOS token
+
+# bash recipes/zero-shot/train.sh prepro_40000_sentencepiece/binarized_mmem baseline
 
 input=$1
 name=$2
@@ -45,7 +47,6 @@ fi
 if [ ! -z "$FP16" ]; then
     gpu_string_train=$gpu_string_train" -fp16 -fp16_mixed"
 fi
-
 echo 'GPU parameters: '$gpu_string_train
 
 if [ -z $OPTIM ]; then
@@ -68,7 +69,7 @@ if [ -z "$WUS" ]; then
 fi
 
 if [ -z "$EPOCHS" ]; then
-    EPOCHS=128
+    EPOCHS=64
 fi
 
 if [ -z "$HEAD" ]; then
@@ -91,8 +92,16 @@ if [ -z "$MULTILAN" ]; then
     MULTILAN=false
 fi
 
+if [ -z "$LAN_EMB" ]; then
+    LAN_EMB=true
+fi
+
 if [ "$LAN_EMB" == true ]; then
     magic_str=$magic_str" -use_language_embedding"
+fi
+
+if [ -z "$LAN_EMB_CONCAT" ]; then
+    LAN_EMB_CONCAT=true
 fi
 
 if [ "$LAN_EMB_CONCAT" == true ]; then
@@ -107,7 +116,13 @@ if [ -z "$DEATH" ]; then
     DEATH=0.0
 fi
 
-python3 -u $NMTDIR/train.py  -data $BASEDIR/model/${name}/train -data_format bin \
+BASEDIR=$WORKDIR
+
+mkdir -p $BASEDIR/model/${name}/checkpoints/
+
+python3 -u $NMTDIR/train.py \
+        -data $BASEDIR/data/${input}/train \
+        -data_format mmem \
        -save_model $BASEDIR/model/${name}/checkpoints/model \
        -model $TRANSFORMER \
        -batch_size_words $BATCH_SIZE \
@@ -116,7 +131,6 @@ python3 -u $NMTDIR/train.py  -data $BASEDIR/model/${name}/train -data_format bin
        -batch_size_multiplier 8 \
        -checkpointing 0 \
        -layers $LAYER \
-       -encoder_layers $ENC_LAYER \
        -model_size $size \
        -inner_size $innersize \
        -n_heads $HEAD \
@@ -135,7 +149,6 @@ python3 -u $NMTDIR/train.py  -data $BASEDIR/model/${name}/train -data_format bin
        -log_interval 1000 \
        -death_rate $DEATH \
        -join_embedding \
-       -data_format mmem \
        -update_frequency -1 \
        $magic_str $gpu_string_train &> $BASEDIR/model/${name}/train.log
 
@@ -151,4 +164,4 @@ python3 -u $NMTDIR/average_checkpoints.py $gpu_string_avg \
 					-models $checkpoints \
 					-output $BASEDIR/model/${name}/model.pt
 
-rm -r $BASEDIR/tmp/${name}/
+# rm -r $BASEDIR/tmp/${name}/

@@ -7,9 +7,9 @@ PERL_MM_OPT="INSTALL_BASE=$HOME/perl5"; export PERL_MM_OPT;
 export HERE=~
 export NMTDIR=$HERE/NMTGMinor #../../
 export SCRIPTDIR=$NMTDIR/recipes/zero-shot #$NMTDIR/scripts
-export WORKDIR=$HERE/export/data2/lcabrera
-export DATADIR=$HERE/export/data2/lcabrera/data
-export OUTDIR=$HERE/export/data2/lcabrera/output
+export WORKDIR=~/../../export/data2/lcabrera
+export DATADIR=$WORKDIR/data
+export OUTDIR=$WORKDIR/output
 
 export OPTDIR=$HERE/opt
 export MOSESDIR=$OPTDIR/mosesdecoder
