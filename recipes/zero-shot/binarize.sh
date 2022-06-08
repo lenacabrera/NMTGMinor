@@ -22,7 +22,6 @@ mkdir $datadir -p
 # for each language pair, e.g. (hi, en), (ne, en)
 for l in s t
 do
-echo $l
     for set in train valid
     do
         # loop through language pairs

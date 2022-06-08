@@ -62,10 +62,10 @@ else
             $INDIC_TOKENIZER ${sl} $inFile > $WORKDIR/data/${name}/eval/$set.tok.s
         fi
 
-        # spm_encode \
-        # 	--model=$WORKDIR/data/${name}/sentencepiece.bpe.model \
-        #         --output_format=piece \
-        #         --vocabulary_threshold 50 < $WORKDIR/data/${name}/eval/$set.tok.s > $WORKDIR/data/${name}/eval/$set.s
+        spm_encode \
+        	--model=$WORKDIR/data/${name}/sentencepiece.bpe.model \
+                --output_format=piece \
+                --vocabulary_threshold 50 < $WORKDIR/data/${name}/eval/$set.tok.s > $WORKDIR/data/${name}/eval/$set.s
 
         # python $FLORES_SCRIPTS/spm_encode.py \
         #                --model $WORKDIR/data/${name}/sentencepiece.bpe.model \

@@ -1,4 +1,4 @@
-
+# format test files into correct file format
 for sl in de en it nl ro; do
     for tl in de en it nl ro; do  
         if [ "$sl" != "$tl" ]; then

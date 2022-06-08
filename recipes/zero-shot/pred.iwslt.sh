@@ -16,7 +16,6 @@ for sl in $LAN; do
             out=$DATADIR/$MODEL/$sl-$tl.pred
 
             bos='#'${tl^^}
-            # echo $bos
 
             python3 -u $NMTDIR/translate.py -gpu $GPU \
             -model $WORKDIR/model/$MODEL/model.pt \
