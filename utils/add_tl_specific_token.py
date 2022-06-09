@@ -1,14 +1,16 @@
 import os
 import csv
 
-if not os.path.exists("./prepro_40000_sentencepiece/bos/"):
-    os.mkdir("./prepro_40000_sentencepiece/bos/")
+PREPRO_DIR = "../../../../export/data2/lcabrera/data/prepro_20000_sentencepiece/"
+
+if not os.path.exists(PREPRO_DIR + "bos/"):
+    os.mkdir(PREPRO_DIR + "bos/")
 
 for set in ["train", "valid"]:
     # path = "./raw/" + set + "/"
-    path = "./prepro_40000_sentencepiece/" + set + "/"
+    path = PREPRO_DIR + set + "/"
     # path_bos = "./raw/bos/" + set + "/"
-    path_bos = "./prepro_40000_sentencepiece/bos/" + set + "/"
+    path_bos = PREPRO_DIR + "bos/" + set + "/"
 
     if not os.path.exists(path_bos):
         os.mkdir(path_bos)
