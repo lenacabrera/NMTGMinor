@@ -7,7 +7,7 @@ mkdir $DATADIR/$MODEL/pivot -p
 mkdir $OUTDIR/$MODEL/pivot -p
 
 # IWSLT languages
-langs="en ro it nl"
+langs="ro it nl"
 # MuST-SHE languages
 # langs="en es it fr"
 
@@ -29,17 +29,20 @@ for src in $langs; do
             bos='#'${tl^^}
 
             echo "Translate to EN..."
-            python3 -u $NMTDIR/translate.py -gpu $GPU \
-                -model $WORKDIR/model/$MODEL/iwslt.pt \
-                -src $pred_src \
-                -batch_size 128 -verbose \
-                -beam_size 4 -alpha 1.0 \
-                -normalize \
-                -output $out \
-                -fast_translate \
-                -src_lang $sl \
-                -tgt_lang $tl \
-                -bos_token $bos
+            python3 -u $NMTDIR/translate.py \
+                    -gpu $GPU \
+                    -model $WORKDIR/model/$MODEL/iwslt.pt \
+                    -src $pred_src \
+                    -batch_size 128 \
+                    -verbose \
+                    -beam_size 4 \
+                    -alpha 1.0 \
+                    -normalize \
+                    -output $out \
+                    -fast_translate \
+                    -src_lang $sl \
+                    -tgt_lang $tl \
+                    -bos_token $bos
 
             # (2) pivot out of English
             export sl=en
@@ -53,17 +56,20 @@ for src in $langs; do
             bos='#'${tl^^}
 
             echo "Translate from EN..."
-            python3 -u $NMTDIR/translate.py -gpu $GPU \
-                -model $WORKDIR/model/$MODEL/iwslt.pt \
-                -src $pred_src \
-                -batch_size 128 -verbose \
-                -beam_size 4 -alpha 1.0 \
-                -normalize \
-                -output $out \
-                -fast_translate \
-                -src_lang $sl \
-                -tgt_lang $tl \
-                -bos_token $bos
+            python3 -u $NMTDIR/translate.py \
+                    -gpu $GPU \
+                    -model $WORKDIR/model/$MODEL/model.pt \
+                    -src $pred_src \
+                    -batch_size 128 \
+                    -verbose \
+                    -beam_size 4 \
+                    -alpha 1.0 \
+                    -normalize \
+                    -output $out \
+                    -fast_translate \
+                    -src_lang $sl \
+                    -tgt_lang $tl \
+                    -bos_token $bos
 
             sed -e "s/@@ //g" $out  | sed -e "s/@@$//g" | sed -e "s/&apos;/'/g" -e 's/&#124;/|/g' -e "s/&amp;/&/g" -e 's/&lt;/>/g' -e 's/&gt;/>/g' -e 's/&quot;/"/g' -e 's/&#91;/[/g' -e 's/&#93;/]/g' -e 's/ - /-/g' | sed -e "s/ '/'/g" | sed -e "s/ '/'/g" | sed -e "s/%- / -/g" | sed -e "s/ -%/- /g" | perl -nle 'print ucfirst' > $out.tok
 
