@@ -1,10 +1,13 @@
 # format test files into correct file format
-for sl in de en it nl ro; do
-    for tl in de en it nl ro; do  
+mkdir -p $DATADIR/iwslt17_multiway/raw/test/prep
+
+for sl in en it nl ro; do
+    for tl in en it nl ro; do  
         if [ "$sl" != "$tl" ]; then
-            for f in $DATADIR/iwslt17_multiway/raw/test/*\.${sl}; do
-                cp -f $f  $DATADIR/iwslt17_multiway/raw/test/$sl-$tl.s
-                cp -f $f  $DATADIR/iwslt17_multiway/raw/test/$tl-$sl.t
+            # for f in $DATADIR/iwslt17_multiway/raw/test/orig/*\.${sl}; do
+            for f in $DATADIR/iwslt17_multiway/raw/test/tst2017${sl}-${tl}.${sl}; do
+                cp -f $f  $DATADIR/iwslt17_multiway/raw/test/prep/$sl-$tl.s
+                cp -f $f  $DATADIR/iwslt17_multiway/raw/test/prep/$tl-$sl.t
             done
             # rm $f
         fi

@@ -5,7 +5,7 @@
 # - language embedding on decoder input (to force correct language), additive or concatenative
 # - Tgt language token replaces normal BOS token
 
-# bash recipes/zero-shot/train.sh prepro_40000_sentencepiece/binarized_mmem baseline
+# bash recipes/zero-shot/train.sh iwslt17_multiway/prepro_20000_subwordnmt/bos/binarized_mmem baseline
 
 input=$1
 name=$2
@@ -17,7 +17,7 @@ fi
 innersize=$((size*4))
 
 if [ -z $LAYER ]; then
-    LAYER=8
+    LAYER=5
 fi
 
 if [ -z $TRANSFORMER ]; then
@@ -33,7 +33,7 @@ if [ -z "$NMTDIR" ]; then
 fi
 
 if [ -z "$GPU" ]; then
-    GPU=0
+    GPU=1
 fi
 
 if [ $GPU -eq -1 ]; then
@@ -69,7 +69,7 @@ if [ -z "$WUS" ]; then
 fi
 
 if [ -z "$EPOCHS" ]; then
-    EPOCHS=64
+    EPOCHS=1
 fi
 
 if [ -z "$HEAD" ]; then
@@ -150,8 +150,10 @@ python3 -u $NMTDIR/train.py \
        -death_rate $DEATH \
        -join_embedding \
        -update_frequency -1 \
-       $magic_str $gpu_string_train &> $BASEDIR/model/${name}/train.log
+        $magic_str $gpu_string_train &> $NMTDIR/../output/train.log
+    #    $magic_str $gpu_string_train &> $BASEDIR/model/${name}/train.log
 
+cp $NMTDIR/../output/train.log $BASEDIR/model/${name}/train.log
 checkpoints=""
 
 for f in `ls $BASEDIR/model/${name}/checkpoints/model_ppl_*`

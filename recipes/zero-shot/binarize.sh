@@ -1,5 +1,5 @@
 name=baseline
-input=prepro_40000_sentencepiece
+input=$1    # iwslt17_multiway/prepro_20000_subwordnmt
 
 # S_LAN="bn|en|en|en|en|en|en|en|en|en|gu|hi|kn|ml|mr|or|pa|te" # has to be sorted alphabetically
 # T_LAN="en|bn|gu|hi|kn|ml|mr|or|pa|te|en|en|en|en|en|en|en|en"
@@ -11,7 +11,6 @@ IFS='|' read -r -a arrayS <<< $S_LAN
 IFS='|' read -r -a arrayT <<< $T_LAN
 
 BASEDIR=$WORKDIR
-echo $BASEDIR
 
 rm -r $BASEDIR/tmp/${name}
 mkdir $BASEDIR/tmp/${name} -p
@@ -27,13 +26,13 @@ do
         # loop through language pairs
         for index in "${!arrayS[@]}"  #pair in te-en ta-en #ne-en si-en
         do
-                pair="${arrayS[index]}-${arrayT[index]}"
-                echo -n "" > $BASEDIR/tmp/${name}/$set-$pair.$l
-
-                for f in $BASEDIR/data/${input}/$set/$pair*\.${l}
-                do  # write out to tmp folder
-                        cat $f >> $BASEDIR/tmp/${name}/$set-$pair.$l
-                done
+            pair="${arrayS[index]}-${arrayT[index]}"
+            echo -n "" > $BASEDIR/tmp/${name}/$set-$pair.$l
+            echo $BASEDIR/data/${input}/$set/$pair*\.${l}
+            for f in $BASEDIR/data/${input}/$set/$pair*\.${l}
+            do  # write out to tmp folder
+                cat $f >> $BASEDIR/tmp/${name}/$set-$pair.$l
+            done
         done
     done
 done

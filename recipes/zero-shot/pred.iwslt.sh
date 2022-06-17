@@ -6,28 +6,32 @@ export MODEL=$1 # model name
 
 LAN="it nl ro en"
 
-mkdir $DATADIR/$MODEL -p
+mkdir $OUTDIR/$MODEL/iwslt17_multiway -p
 
 for sl in $LAN; do
     for tl in $LAN; do
         if [[ ! "$sl" == "$tl" ]]; then
 
-            pred_src=$DATADIR/iwslt17_multiway/test/tok/tst2017$sl-$tl.real.s # path to tokenized test data
-            out=$DATADIR/$MODEL/$sl-$tl.pred
+            pred_src=$DATADIR/iwslt17_multiway/prepro_20000_subwordnmt/test/$sl-$tl.s # path to tokenized test data
+            # pred_src=$DATADIR/iwslt17_multiway/raw/test/tok/tst2017$sl-$tl.real.s # path to tokenized test data
+            out=$OUTDIR/$MODEL/iwslt17_multiway/$sl-$tl.pred
 
             bos='#'${tl^^}
 
-            python3 -u $NMTDIR/translate.py -gpu $GPU \
-            -model $WORKDIR/model/$MODEL/model.pt \
-            -src $pred_src \
-            -batch_size 128 -verbose \
-            -beam_size 4 -alpha 1.0 \
-            -normalize \
-            -output $out \
-            -fast_translate \
-            -src_lang $sl \
-            -tgt_lang $tl \
-            -bos_token $bos
+            python3 -u $NMTDIR/translate.py \
+                    -gpu $GPU \
+                    -model $WORKDIR/model/$MODEL/iwslt.pt \
+                    -src $pred_src \
+                    -batch_size 128 \
+                    -verbose \
+                    -beam_size 4 \
+                    -alpha 1.0 \
+                    -normalize \
+                    -output $out \
+                    -fast_translate \
+                    -src_lang $sl \
+                    -tgt_lang $tl \
+                    -bos_token $bos
             
             # Postprocess output
             sed -e "s/@@ //g" $out  | sed -e "s/@@$//g" | sed -e "s/&apos;/'/g" -e 's/&#124;/|/g' -e "s/&amp;/&/g" -e 's/&lt;/>/g' -e 's/&gt;/>/g' -e 's/&quot;/"/g' -e 's/&#91;/[/g' -e 's/&#93;/]/g' -e 's/ - /-/g' | sed -e "s/ '/'/g" | sed -e "s/ '/'/g" | sed -e "s/%- / -/g" | sed -e "s/ -%/- /g" | perl -nle 'print ucfirst' > $out.tok
@@ -37,8 +41,11 @@ for sl in $LAN; do
         
             echo '===========================================' $sl $tl
             # Evaluate against original reference  
-            cat $out.pt | sacrebleu $DATADIR/iwslt17_multiway/test/orig/tst2017$tl-$sl.$tl > $OUTDIR/$MODEL/$sl-$tl.test.res
-            cat $OUTDIR/$MODEL/$sl-$tl.test.res
+            echo "orig: " $DATADIR/iwslt17_multiway/raw/test/orig/tst2017$tl-$sl.$tl
+            echo "pred: " $OUTDIR/$MODEL/iwslt17_multiway/$sl-$tl.test.res
+            echo  
+            cat $out.pt | sacrebleu $DATADIR/iwslt17_multiway/raw/test/tst2017$tl-$sl.$tl > $OUTDIR/$MODEL/iwslt17_multiway/$sl-$tl.test.res
+            cat $OUTDIR/$MODEL/iwslt17_multiway/$sl-$tl.test.res
         
         fi
     done

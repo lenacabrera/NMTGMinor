@@ -162,3 +162,12 @@ in the format of: `dev / test`.
 | Europarl, non-overlap  | 36.0 / 35.6 | 35.7 / 35.4 | 35.3 / 34.9 |
 | Europarl, full         | 35.9 / 35.4 | 35.6 / 36.4 | 36.0 / 35.9 |
 | PMIndia                | 30.6 / 30.4 | 30.0 / 29.9 | 29.4 / 29.2 |
+
+
+## Current Pipeline
+- prepare data
+- preprocess
+- add target language sepcific bos token
+- binarize (with no_bos)
+- train
+- pred

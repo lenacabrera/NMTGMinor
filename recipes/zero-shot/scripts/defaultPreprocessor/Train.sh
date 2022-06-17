@@ -35,8 +35,11 @@ mkdir -p $BASEDIR/tmp/${name}/tok/valid
 mkdir -p $BASEDIR/tmp/${name}/sc/train
 mkdir -p $BASEDIR/tmp/${name}/sc/valid
 mkdir -p $WORKDIR/model/${name}
+mkdir -p $WORKDIR/model/${name}/${input}
 mkdir -p $BASEDIR/${name}/train
 mkdir -p $BASEDIR/${name}/valid
+
+echo "codec: " $WORKDIR/model/${name}/${input}/codec
 
 
 ### (1) TOKENIZATION 
@@ -107,13 +110,13 @@ echo "*** Learning Truecaser"
 ## Source
 if [ "$SRC_INDIC" != true ]; then
     # train
-    $MOSESDIR/scripts/recaser/train-truecaser.perl --model $WORKDIR/model/${name}/truecase-model.s --corpus $BASEDIR/tmp/${name}/corpus.tok.s
+    $MOSESDIR/scripts/recaser/train-truecaser.perl --model $WORKDIR/model/${name}/${input}/truecase-model.s --corpus $BASEDIR/tmp/${name}/corpus.tok.s
     # apply
     for set in valid train
         do
             for f in $BASEDIR/tmp/${name}/tok/$set/*\.s
                 do
-                cat $f | $MOSESDIR/scripts/recaser/truecase.perl --model $WORKDIR/model/${name}/truecase-model.s > $BASEDIR/tmp/${name}/sc/$set/${f##*/}
+                cat $f | $MOSESDIR/scripts/recaser/truecase.perl --model $WORKDIR/model/${name}/${input}/truecase-model.s > $BASEDIR/tmp/${name}/sc/$set/${f##*/}
         done
     done
 else # skip smartcasing
@@ -134,13 +137,13 @@ done
 
 ## Target
 # train
-$MOSESDIR/scripts/recaser/train-truecaser.perl --model $WORKDIR/model/${name}/truecase-model.t --corpus $BASEDIR/tmp/${name}/corpus.tok.t
+$MOSESDIR/scripts/recaser/train-truecaser.perl --model $WORKDIR/model/${name}/${input}/truecase-model.t --corpus $BASEDIR/tmp/${name}/corpus.tok.t
 # apply
 for set in valid train
     do
     for f in $BASEDIR/tmp/${name}/tok/$set/*\.t
         do
-        cat $f | $MOSESDIR/scripts/recaser/truecase.perl --model $WORKDIR/model/${name}/truecase-model.t > $BASEDIR/tmp/${name}/sc/$set/${f##*/}
+        cat $f | $MOSESDIR/scripts/recaser/truecase.perl --model $WORKDIR/model/${name}/${input}/truecase-model.t > $BASEDIR/tmp/${name}/sc/$set/${f##*/}
     done
 done
 
@@ -155,7 +158,7 @@ echo "*** Learning BPE of size" $BPESIZE
 if [ ! "$SENTENCE_PIECE" == true ]; then
     # using subword-nmt 
 	echo "*** BPE by subword-nmt"
-	$BPEDIR/subword_nmt/learn_joint_bpe_and_vocab.py --input $BASEDIR/tmp/${name}/corpus.sc.s $BASEDIR/tmp/${name}/corpus.sc.t -s $BPESIZE -o $WORKDIR/model/${name}/codec --write-vocabulary $WORKDIR/model/${name}/voc.s $WORKDIR/model/${name}/voc.t
+	$BPEDIR/subword_nmt/learn_joint_bpe_and_vocab.py --input $BASEDIR/tmp/${name}/corpus.sc.s $BASEDIR/tmp/${name}/corpus.sc.t -s $BPESIZE -o $WORKDIR/model/${name}/${input}/codec --write-vocabulary $WORKDIR/model/${name}/${input}/voc.s $WORKDIR/model/${name}/${input}/voc.t
 
     ## Source
 	for set in valid train
@@ -163,7 +166,7 @@ if [ ! "$SENTENCE_PIECE" == true ]; then
 		for f in $BASEDIR/tmp/${name}/sc/$set/*\.s
             do
             echo $f
-            $BPEDIR/subword_nmt/apply_bpe.py -c $WORKDIR/model/${name}/codec --vocabulary $WORKDIR/model/${name}/voc.s --vocabulary-threshold 50 < $f > $BASEDIR/${name}/$set/${f##*/}
+            $BPEDIR/subword_nmt/apply_bpe.py -c $WORKDIR/model/${name}/${input}/codec --vocabulary $WORKDIR/model/${name}/${input}/voc.s --vocabulary-threshold 50 < $f > $BASEDIR/${name}/$set/${f##*/}
 		done
 	done
 
@@ -173,7 +176,7 @@ if [ ! "$SENTENCE_PIECE" == true ]; then
 		for f in $BASEDIR/tmp/${name}/sc/$set/*\.t
             do
             echo $f
-            $BPEDIR/subword_nmt/apply_bpe.py -c $WORKDIR/model/${name}/codec --vocabulary $WORKDIR/model/${name}/voc.t --vocabulary-threshold 50 < $f > $BASEDIR/${name}/$set/${f##*/}
+            $BPEDIR/subword_nmt/apply_bpe.py -c $WORKDIR/model/${name}/${input}/codec --vocabulary $WORKDIR/model/${name}/${input}/voc.t --vocabulary-threshold 50 < $f > $BASEDIR/${name}/$set/${f##*/}
 		done
 	done
 
@@ -199,4 +202,4 @@ else
 	done
 fi
 
-rm -r $BASEDIR/tmp
+# rm -r $BASEDIR/tmp
