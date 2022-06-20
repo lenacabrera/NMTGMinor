@@ -1,0 +1,172 @@
+#!/bin/bash
+
+# Note these configurations:
+# - shared src tgt vocabulary
+# - language embedding on decoder input (to force correct language), additive or concatenative
+# - Tgt language token replaces normal BOS token
+
+# bash recipes/zero-shot/train.sh mustc/prepro_20000_subwordnmt/binarized_mmem baseline_mustc_new
+
+input=$1
+name=$2
+
+size=512
+if [ $# -ne 2 ]; then
+    size=$3
+fi
+innersize=$((size*4))
+
+if [ -z $LAYER ]; then
+    LAYER=5
+fi
+
+if [ -z $TRANSFORMER ]; then
+    TRANSFORMER=transformer
+fi
+
+if [ -z "$BASEDIR" ]; then
+    BASEDIR=/
+fi
+
+if [ -z "$NMTDIR" ]; then
+    NMTDIR=/opt/NMTGMinor/
+fi
+
+if [ -z "$GPU" ]; then
+    GPU=0
+fi
+
+if [ $GPU -eq -1 ]; then
+    gpu_string_train=""
+    gpu_string_avg=""
+else
+    gpu_string_train="-gpus "$GPU
+    gpu_string_avg="-gpu "$GPU
+fi
+
+if [ ! -z "$FP16" ]; then
+    gpu_string_train=$gpu_string_train" -fp16 -fp16_mixed"
+fi
+echo 'GPU parameters: '$gpu_string_train
+
+if [ -z $OPTIM ]; then
+    optim_str="-optim adam -update_method noam"
+elif [ $OPTIM == "noam" ]; then
+    optim_str="-optim adam -update_method noam"
+elif [ $OPTIM == "adam" ]; then
+    optim_str="-optim adam"
+else
+    echo "Unkown optim methods "$OPTIM
+    exit;
+fi
+
+if [ -z "$LR" ]; then
+    LR=2
+fi
+
+if [ -z "$WUS" ]; then
+    WUS=8000
+fi
+
+if [ -z "$EPOCHS" ]; then
+    EPOCHS=64
+fi
+
+if [ -z "$HEAD" ]; then
+    HEAD=8
+fi
+
+if [ -z "$BATCH_SIZE" ]; then
+    BATCH_SIZE=3584
+fi
+
+if [ -z "$INPUT_TYPE" ]; then
+    INPUT_TYPE=word
+fi
+
+if [ -z "$SKIP_TRAIN" ]; then
+    SKIP_TRAIN=false
+fi
+
+if [ -z "$MULTILAN" ]; then
+    MULTILAN=false
+fi
+
+if [ -z "$LAN_EMB" ]; then
+    LAN_EMB=true
+fi
+
+if [ "$LAN_EMB" == true ]; then
+    magic_str=$magic_str" -use_language_embedding"
+fi
+
+if [ -z "$LAN_EMB_CONCAT" ]; then
+    LAN_EMB_CONCAT=true
+fi
+
+if [ "$LAN_EMB_CONCAT" == true ]; then
+    magic_str=$magic_str" -language_embedding_type concat"
+fi
+
+if [ -z "$SEED" ]; then
+    SEED=8877
+fi
+
+if [ -z "$DEATH" ]; then
+    DEATH=0.0
+fi
+
+BASEDIR=$WORKDIR
+
+mkdir -p $BASEDIR/model/${name}/checkpoints/
+echo $BASEDIR/data/${input}/train
+
+DATE_WITH_TIME=`date "+%Y%m%d-%H%M%S"`
+
+python3 -u $NMTDIR/train.py \
+        -data $BASEDIR/data/${input}/train \
+        -data_format mmem \
+       -save_model $BASEDIR/model/${name}/checkpoints/model \
+       -model $TRANSFORMER \
+       -batch_size_words $BATCH_SIZE \
+       -batch_size_update 24568 \
+       -batch_size_sents 9999 \
+       -batch_size_multiplier 8 \
+       -checkpointing 0 \
+       -layers $LAYER \
+       -model_size $size \
+       -inner_size $innersize \
+       -n_heads $HEAD \
+       -dropout 0.2 \
+       -attn_dropout 0.2 \
+       -word_dropout 0.1 \
+       -emb_dropout 0.2 \
+       -label_smoothing 0.1 \
+       -epochs $EPOCHS \
+       $optim_str \
+       -learning_rate $LR \
+       -normalize_gradient \
+       -warmup_steps $WUS \
+       -tie_weights \
+       -seed $SEED \
+       -log_interval 1000 \
+       -death_rate $DEATH \
+       -join_embedding \
+       -update_frequency -1 \
+        $magic_str $gpu_string_train &> $NMTDIR/../output/${DATE_WITH_TIME}_train_mustc.log
+    #    $magic_str $gpu_string_train &> $BASEDIR/model/${name}/train.log
+
+cp $NMTDIR/../output/${DATE_WITH_TIME}_train_mustc.log $BASEDIR/model/${name}/${DATE_WITH_TIME}_train_mustc.log
+checkpoints=""
+
+for f in `ls $BASEDIR/model/${name}/checkpoints/model_ppl_*`
+do
+    checkpoints=$checkpoints"${f}|"
+done
+checkpoints=`echo $checkpoints | sed -e "s/|$//g"`
+
+python3 -u $NMTDIR/average_checkpoints.py $gpu_string_avg \
+					-models $checkpoints \
+					-output $BASEDIR/model/${name}/model.pt
+
+# rm -r $BASEDIR/tmp/${name}/
