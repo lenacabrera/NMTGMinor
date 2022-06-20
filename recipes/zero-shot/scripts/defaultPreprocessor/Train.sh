@@ -202,4 +202,4 @@ else
 	done
 fi
 
-# rm -r $BASEDIR/tmp
+rm -r $BASEDIR/tmp

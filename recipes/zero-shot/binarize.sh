@@ -27,8 +27,6 @@ do
         for index in "${!arrayS[@]}"  #pair in te-en ta-en #ne-en si-en
         do
             pair="${arrayS[index]}-${arrayT[index]}"
-            echo -n "" > $BASEDIR/tmp/${name}/$set-$pair.$l
-            echo $BASEDIR/data/${input}/$set/$pair*\.${l}
             for f in $BASEDIR/data/${input}/$set/$pair*\.${l}
             do  # write out to tmp folder
                 cat $f >> $BASEDIR/tmp/${name}/$set-$pair.$l

@@ -16,10 +16,6 @@ PREPRO_DIR=prepro_${PREPRO_TYPE}
 
 $SCRIPTDIR/scripts/defaultPreprocessor/Train.sh $systemName $PREPRO_DIR
 
-# # indian languages
-# for sl in en te kn ml bn gu hi mr or pa; do
-#         for tl in en te kn ml bn gu hi mr or pa; do
-
 # IWSLT languages
 for sl in en it nl ro; do
         for tl in en it nl ro; do
@@ -32,6 +28,4 @@ for sl in en it nl ro; do
         done
 done
 
-# mkdir -p $DATADIR/$systemName/$PREPRO_DIR/no_bos/
-# mv $DATADIR/$systemName/$PREPRO_DIR/* $DATADIR/$systemName/$PREPRO_DIR/no_bos/
-# python -u $NMTDIR/utils/add_tl_specific_token.py $DATADIR/$systemName/$PREPRO_DIR/
+python -u $NMTDIR/utils/add_tl_specific_token.py $DATADIR/$systemName/$PREPRO_DIR/ iwslt

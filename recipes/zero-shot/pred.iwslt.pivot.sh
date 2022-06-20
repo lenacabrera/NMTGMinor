@@ -8,8 +8,6 @@ mkdir $OUTDIR/$MODEL/pivot -p
 
 # IWSLT languages
 langs="ro it nl"
-# MuST-SHE languages
-# langs="en es it fr"
 
 for src in $langs; do
     for tgt in $langs; do
@@ -21,7 +19,7 @@ for src in $langs; do
             export sl=$src
             export tl=en
 
-            ln -s -f $DATADIR/iwslt17_multiway/test/tok/tst2017${src}-${tgt}.real.s  $OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.s # symbolic link
+            ln -s -f $DATADIR/iwslt17_multiway/prepro_20000_subwordnmt/test/$sl-$tl.s  $OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.s # symbolic link
             
             pred_src=$OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.s
             out=$OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.t
@@ -31,7 +29,7 @@ for src in $langs; do
             echo "Translate to EN..."
             python3 -u $NMTDIR/translate.py \
                     -gpu $GPU \
-                    -model $WORKDIR/model/$MODEL/iwslt.pt \
+                    -model $WORKDIR/model/$MODEL/model.pt \
                     -src $pred_src \
                     -batch_size 128 \
                     -verbose \
@@ -75,10 +73,12 @@ for src in $langs; do
 
             $MOSESDIR/scripts/tokenizer/detokenizer.perl -l $tl < $out.tok > $out.detok
             $MOSESDIR/scripts/recaser/detruecase.perl < $out.detok > $out.pt
-            
+
             rm $out.tok $out.detok
-            cat $out.pt | sacrebleu $DATADIR/iwslt17_multiway/test/orig/tst2017$tgt-$src.$tgt > $out.res
- 
+
+            echo '===========================================' $src $tgt
+            # Evaluate against original reference  
+            cat $out.pt | sacrebleu $DATADIR/iwslt17_multiway/raw/test/orig/tst2017$tgt-$src.$tgt > $out.res
         fi
     done
 done

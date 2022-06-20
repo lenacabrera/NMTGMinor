@@ -13,7 +13,6 @@ for sl in $LAN; do
         if [[ ! "$sl" == "$tl" ]]; then
 
             pred_src=$DATADIR/iwslt17_multiway/prepro_20000_subwordnmt/test/$sl-$tl.s # path to tokenized test data
-            # pred_src=$DATADIR/iwslt17_multiway/raw/test/tok/tst2017$sl-$tl.real.s # path to tokenized test data
             out=$OUTDIR/$MODEL/iwslt17_multiway/$sl-$tl.pred
 
             bos='#'${tl^^}
@@ -38,15 +37,13 @@ for sl in $LAN; do
             
             $MOSESDIR/scripts/tokenizer/detokenizer.perl -l $tl < $out.tok > $out.detok
             $MOSESDIR/scripts/recaser/detruecase.perl < $out.detok > $out.pt
+
+            rm $out.tok $out.detok
         
             echo '===========================================' $sl $tl
             # Evaluate against original reference  
-            echo "orig: " $DATADIR/iwslt17_multiway/raw/test/orig/tst2017$tl-$sl.$tl
-            echo "pred: " $OUTDIR/$MODEL/iwslt17_multiway/$sl-$tl.test.res
-            echo  
             cat $out.pt | sacrebleu $DATADIR/iwslt17_multiway/raw/test/tst2017$tl-$sl.$tl > $OUTDIR/$MODEL/iwslt17_multiway/$sl-$tl.test.res
             cat $OUTDIR/$MODEL/iwslt17_multiway/$sl-$tl.test.res
-        
         fi
     done
 done
