@@ -19,7 +19,9 @@ for src in $langs; do
             export sl=$src
             export tl=en
 
-            ln -s -f $DATADIR/iwslt17_multiway/prepro_20000_subwordnmt/test/$sl-$tl.s  $OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.s # symbolic link
+            # ln -s -f $DATADIR/iwslt17_multiway/prepro_20000_subwordnmt/test/$sl-$tl.s  $OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.s # symbolic link
+            # above line is correct, however, files are not truly parallel; thus, use below
+            ln -s -f $DATADIR/iwslt17_multiway/prepro_20000_subwordnmt/test/$sl-$tgt.s  $OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.s 
             
             pred_src=$OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.s
             out=$OUTDIR/$MODEL/pivot/tst2017${src}-en-${tgt}.real.pivotin.t
@@ -78,7 +80,8 @@ for src in $langs; do
 
             echo '===========================================' $src $tgt
             # Evaluate against original reference  
-            cat $out.pt | sacrebleu $DATADIR/iwslt17_multiway/raw/test/orig/tst2017$tgt-$src.$tgt > $out.res
+            cat $out.pt | sacrebleu $DATADIR/iwslt17_multiway/raw/test/tst2017$tgt-$src.$tgt > $out.res
+            cat $out.res
         fi
     done
 done
