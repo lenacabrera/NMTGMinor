@@ -40,17 +40,6 @@ def extract_parallel_sentences(en_cs_path, en_de_path, en_es_path, en_fr_path, e
     print(f"Found {len(par)} matches")
     print("Saving files...")
     with open(out_dir + "en.s", "w") as en_f:
-<<<<<<< HEAD
-        with open(out_dir + "cs-en.s", "w") as cs_f:
-            with open(out_dir + "de-en.s", "w") as de_f:
-                with open(out_dir + "es-en.s", "w") as es_f:
-                    with open(out_dir + "fr-en.s", "w") as fr_f:
-                        with open(out_dir + "it-en.s", "w") as it_f:
-                            with open(out_dir + "nl-en.s", "w") as nl_f:
-                                with open(out_dir + "pt-en.s", "w") as pt_f:
-                                    with open(out_dir + "ro-en.s", "w") as ro_f:
-                                        with open(out_dir + "ru-en.s", "w") as ru_f:
-=======
         with open(out_dir + "cs.s", "w") as cs_f:
             with open(out_dir + "de.s", "w") as de_f:
                 with open(out_dir + "es.s", "w") as es_f:
@@ -60,7 +49,6 @@ def extract_parallel_sentences(en_cs_path, en_de_path, en_es_path, en_fr_path, e
                                 with open(out_dir + "pt.s", "w") as pt_f:
                                     with open(out_dir + "ro.s", "w") as ro_f:
                                         with open(out_dir + "ru.s", "w") as ru_f:
->>>>>>> 8e9c712c3219cabfbeaa7e5775064b2aaf49a1d3
                                             for en in par.keys():
                                                 en_f.write(en + "\n")
                                                 cs_f.write(par[en]["cs"] + "\n")
