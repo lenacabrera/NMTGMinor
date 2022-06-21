@@ -1,24 +1,18 @@
-# NMTGMinor
+# Gender Bias in Multilingual Machine Translation
+Repository for my Master's thesis at Maastricht University on 'Gender Bias in Multilingual Machine Translation'
 
-## Intro
-First off: This repository is based on [NMTGMinor](https://github.com/quanpn90/NMTGMinor). 
-Please see [here](https://github.com/quanpn90/NMTGMinor) for its main contributors.
+# Starting Basis
 
-This repo is a sequence-to-sequence toolkit.
+## Paper
+Improving Zero-Shot Translation by Disentangling Positional Information ([link](https://aclanthology.org/2021.acl-long.101.pdf))
 
-It supports machine translation, speech recognition/translation.
+## Repository
+https://github.com/nlp-dke/NMTGMinor/
 
-----------------------------
-## Requirement 
-* Python version >= 3.7 (most recommended)
-* [PyTorch](https://pytorch.org/) >= 1.0.1
-* [apex](https://github.com/nvidia/apex) when using half- or mixed-precision training
-
-Create virtual environment from [environment.yml](./environment.yml) by:
-
-```
-conda env create -f environment.yml
-```
-
-----------------------------
+### Resources
+- Data: 
+  - IWSLT: [raw](https://drive.google.com/file/d/105ZG4u2_4tnJumwaPSYj_zrSyZqVuiru/view?usp=sharing), [preprocessed](https://drive.google.com/file/d/1RsmTye2nrPkWir6hADthXhqirxtUiP5A/view?usp=sharing)  
+- Trained models: 
+  - Zero-shot translation: [Baseline](https://drive.google.com/file/d/137YjxsZo5a1LGAfdzwjw8vbEokTc05N0/view?usp=sharing), [Residual](https://drive.google.com/file/d/1oeAfWg4yddNBuDJ8G7oD4p-TsYtxpGo0/view?usp=sharing)
+  - Preprocessing: [BPE](https://drive.google.com/file/d/1wlpQFprKvuuzU6LjKDMMDduvXHU9uO59/view?usp=sharing)
 
