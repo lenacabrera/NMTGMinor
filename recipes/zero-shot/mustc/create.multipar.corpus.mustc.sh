@@ -72,11 +72,22 @@ python -u $NMTDIR/utils/multi_parallel_mustc.py \
     $DATADIR/mustc/multipar/test/
 
 
-for set in train valid test; do
-    for lan in cs de es fr it nl pt ro ru; do
-        cp -f $DATADIR/mustc/multipar/$set/en.s $DATADIR/mustc/multipar/$set/en-$lan.s
-        cp -f $DATADIR/mustc/multipar/$set/en-$lan.s $DATADIR/mustc/multipar/$set/$lan-en.t
-        cp -f $DATADIR/mustc/multipar/$set/$lan-en.s $DATADIR/mustc/multipar/$set/en-$lan.t
+sets="train valid test"
+for set in $sets; do
+    for f in $DATADIR/mustc/multipar/$set/*\.s; do
+        lan="$(basename "$f")"
+        sl=${lan:0:2}
+        for tl in cs de en es fr it nl pt ro ru; do
+            if [ "$sl" != "$tl" ]; then
+                cp -f $f $DATADIR/mustc/multipar/$set/$sl-$tl.s
+            fi
+        done
+        rm $f
     done
-    rm $DATADIR/mustc/multipar/$set/en.s
+    for f in $DATADIR/mustc/multipar/$set/*\.s; do
+        lan="$(basename "$f")"
+        sl=${lan:0:2}
+        tl=${lan:3:2}
+        cp $f $DATADIR/mustc/raw/$ref/$tl-$sl.t
+    done
 done
