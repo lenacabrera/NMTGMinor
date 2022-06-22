@@ -1,12 +1,24 @@
 import sys
 import tqdm
 
-def create_language_pair_dict(en, tl):
+def create_language_pair_dict(en, es, fr, it):
     with open(en, "r") as ef:
-        with open(tl, "r") as tf:
-            en_lines = ef.read().splitlines()
-            tl_lines = tf.read().splitlines()
-            return dict(zip(en_lines, tl_lines))
+        with open(es, "r") as esf:
+            with open(fr, "r") as frf:
+                with open(it, "r") as itf:
+                    en_lines = ef.read().splitlines()
+                    es_lines = esf.read().splitlines()
+                    fr_lines = frf.read().splitlines()
+                    it_lines = itf.read().splitlines()
+
+                    en_es_fr_it_d = {}
+                    for l, es_l, fr_l, it_l in zip(en_lines, es_lines, fr_lines, it_lines):
+                        en_es_fr_it_d[l] = {
+                            "es": es_l,
+                            "fr": fr_l,
+                            "it": it_l,
+                        }
+                    return en_es_fr_it_d
 
 def create_list_of_en_mustc_sentences(en_cs_mustc, en_de_mustc, en_es_mustc, en_fr_mustc, en_it_mustc, en_nl_mustc, en_pt_mustc, en_ro_mustc, en_ru_mustc):
     with open(en_cs_mustc, "r") as en_cs:
@@ -39,59 +51,69 @@ def create_list_of_en_mustc_sentences(en_cs_mustc, en_de_mustc, en_es_mustc, en_
     return lines
 
 def check_overlap(en_cs_mustc, en_de_mustc, en_es_mustc, en_fr_mustc, en_it_mustc, en_nl_mustc, en_pt_mustc, en_ro_mustc, en_ru_mustc, 
-    en_es_mustshe, es_mustshe, en_fr_mustshe, fr_mustshe, en_it_mustshe, it_mustshe, out_dir):
+    en_par_mustshe, es_par_mustshe, fr_par_mustshe, it_par_mustshe, es_wr_par_mustshe, fr_wr_par_mustshe, it_wr_par_mustshe, out_dir, out_dir_wr):
 
     en = create_list_of_en_mustc_sentences(en_cs_mustc, en_de_mustc, en_es_mustc, en_fr_mustc, en_it_mustc, en_nl_mustc, en_pt_mustc, en_ro_mustc, en_ru_mustc)
-    en_es_d = create_language_pair_dict(en_es_mustshe, es_mustshe)
-    en_fr_d = create_language_pair_dict(en_fr_mustshe, fr_mustshe)
-    en_it_d = create_language_pair_dict(en_it_mustshe, it_mustshe)
+    mustshe_en_es_fr_it_d = create_language_pair_dict(en_par_mustshe, es_par_mustshe, fr_par_mustshe, it_par_mustshe)
+    mustshe_en_wr_es_fr_it_d = create_language_pair_dict(en_par_mustshe, es_wr_par_mustshe, fr_wr_par_mustshe, it_wr_par_mustshe)
 
-    en_es_no_ovl = {}
-    en_fr_no_ovl = {}
-    en_it_no_ovl = {}
+    en_novl = []
+    es_novl = []
+    fr_novl = []
+    it_novl = []
+    es_wr_novl = []
+    fr_wr_novl = []
+    it_wr_novl = []
 
-    duplicates = []
-    print("Check ES...")
-    for l, es in tqdm.tqdm(en_es_d.items()):
+    ovl = []
+
+    for l in tqdm.tqdm(mustshe_en_es_fr_it_d.keys()):
         if l in en:
-            duplicates.append(l)
+            ovl.append(l)
         else:
-            en_es_no_ovl[l] = es
+            en_novl.append(l)
 
-    print("Check FR...")
-    for l, fr in tqdm.tqdm(en_fr_d.items()):
-        if l in en:
-            duplicates.append(l)
-        else:
-            en_fr_no_ovl[l] = fr
+            es_novl.append(mustshe_en_es_fr_it_d[l]["es"])
+            fr_novl.append(mustshe_en_es_fr_it_d[l]["fr"])
+            it_novl.append(mustshe_en_es_fr_it_d[l]["it"]) 
 
-    print("Check IT...")
-    for l, it in tqdm.tqdm(en_it_d.items()):
-        if l in en:
-            duplicates.append(l)
-        else:
-            en_it_no_ovl[l] = it
-        
-    print(f"Found {len(duplicates)} matches of {len(en_es_no_ovl) + len(en_fr_no_ovl) + len(en_it_no_ovl)} lines.")
+            es_wr_novl.append(mustshe_en_wr_es_fr_it_d[l]["es"])
+            fr_wr_novl.append(mustshe_en_wr_es_fr_it_d[l]["fr"])
+            it_wr_novl.append(mustshe_en_wr_es_fr_it_d[l]["it"])  
 
-    with open(out_dir + "en-es.s", "w") as en_es_f:
-        with open(out_dir + "es-en.s", "w") as es_en_f:
-            for l, es in en_es_no_ovl.items():
-                en_es_f.write(l + "\n")
-                es_en_f.write(es + "\n")
+    with open(out_dir + "en_par.s", "w") as enf:
+        with open(out_dir_wr + "en_par.s", "w") as enf_wr:
+            print(len(en_novl), len(mustshe_en_es_fr_it_d.keys()))
+            for l in en_novl:
+                enf.write(l + "\n")
+                enf_wr.write(l + "\n")
 
-    with open(out_dir + "en-fr.s", "w") as en_fr_f:
-        with open(out_dir + "fr-en.s", "w") as fr_en_f:
-            for l, fr in en_fr_no_ovl.items():
-                en_fr_f.write(l + "\n")
-                fr_en_f.write(fr + "\n")
+    with open(out_dir + "es_par.s", "w") as esf:
+        for l in es_novl:
+            esf.write(l + "\n")
 
-    with open(out_dir + "en-it.s", "w") as en_it_f:
-        with open(out_dir + "it-en.s", "w") as it_en_f:
-            for l, it in en_it_no_ovl.items():
-                en_it_f.write(l + "\n")
-                it_en_f.write(it + "\n")                         
+    with open(out_dir + "fr_par.s", "w") as frf:
+        for l in fr_novl:
+            frf.write(l + "\n")
 
+    with open(out_dir + "it_par.s", "w") as itf:
+        for l in it_novl:
+            itf.write(l + "\n")
+
+    with open(out_dir_wr + "es_par.s", "w") as esf:
+        for l in es_wr_novl:
+            esf.write(l + "\n")
+
+    with open(out_dir_wr + "fr_par.s", "w") as frf:
+        for l in fr_wr_novl:
+            frf.write(l + "\n")
+
+    with open(out_dir_wr + "it_par.s", "w") as itf:
+        for l in it_wr_novl:
+            itf.write(l + "\n")
+
+    print(f"Found {len(ovl)} duplicates.")
+    print(f"Remaining {len(en_novl)} sentences.")
     print("Done.")
 
 
@@ -108,11 +130,14 @@ if __name__ == '__main__':
         en_pt_mustc=args[6], 
         en_ro_mustc=args[7], 
         en_ru_mustc=args[8],
-        en_es_mustshe=args[9],
-        es_mustshe=args[10],
-        en_fr_mustshe=args[11],
-        fr_mustshe=args[12],
-        en_it_mustshe=args[13],
-        it_mustshe=args[14],
-        out_dir=args[15]
+        en_par_mustshe=args[9],
+        es_par_mustshe=args[10],
+        fr_par_mustshe=args[11],
+        it_par_mustshe=args[12],
+        es_wr_par_mustshe=args[13],
+        fr_wr_par_mustshe=args[14],
+        it_wr_par_mustshe=args[15],
+        out_dir=args[16],
+        out_dir_wr=args[17]
     )
+    

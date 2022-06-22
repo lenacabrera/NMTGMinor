@@ -1,29 +1,35 @@
 #!/bin/bash
 source ./recipes/zero-shot/config.sh
 
-mkdir -p $DATADIR/mustshe/prep
-mkdir -p $DATADIR/mustshe/prep/correct_ref
-mkdir -p $DATADIR/mustshe/prep/wrong_ref
-mkdir -p $DATADIR/mustshe/orig/
-mkdir -p $DATADIR/mustshe/orig/correct_ref
-mkdir -p $DATADIR/mustshe/orig/wrong_ref
+REMOVE_OVERLAP_W_MUSTC=$1
 
-# add mode to args
-python3 -u $NMTDIR/utils/prepro_tsv.py $DATADIR/mustshe/
+mkdir -p $DATADIR/mustshe/raw
+mkdir -p $DATADIR/mustshe/raw/correct_ref
+mkdir -p $DATADIR/mustshe/raw/wrong_ref
+
+# TODO add mode to args
+python3 -u $NMTDIR/utils/prepro_tsv_mustshe.py $DATADIR/mustshe/raw/ correct_ref wrong_ref
+
+if [ $REMOVE_OVERLAP_W_MUSTC == true ]; then
+    echo "Remove sentences overlaping with MuST-C data"
+    bash $SCRIPTDIR/mustshe/remove.overlap.mustc.mustshe.sh
+fi
 
 for ref in correct_ref wrong_ref; do
-    for f in $DATADIR/mustshe/prep/$ref/*\.s; do
+    for f in $DATADIR/mustshe/raw/$ref/*\_par.s; do
         lan="$(basename "$f")"
         sl=${lan:0:2}
-        # echo $f
-        for tl in en es it fr; do
+        for tl in en es fr it; do
             if [ "$sl" != "$tl" ]; then
-                # file prepared for tokenization 
-                cp -f $f  $DATADIR/mustshe/prep/$ref/$sl-$tl.s
-                # orig data for evaluation
-                cp -f $f  $DATADIR/mustshe/orig/$ref/$sl-$tl.s
-                cp -f $f  $DATADIR/mustshe/orig/$ref/$tl-$sl.t
+                cp $f $DATADIR/mustshe/raw/$ref/$sl-$tl.s
             fi
         done
+        rm $f
+    done
+    for f in $DATADIR/mustshe/raw/$ref/*\.s; do
+        lan="$(basename "$f")"
+        sl=${lan:0:2}
+        tl=${lan:3:2}
+        cp $f $DATADIR/mustshe/raw/$ref/$tl-$sl.t
     done
 done
