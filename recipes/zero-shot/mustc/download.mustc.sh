@@ -2,9 +2,9 @@
 export AUTHCODE=$1
 
 # Download of MuST-C V1.2 (https://ict.fbk.eu/must-c-release-v1-2/)
-dest_path=$DATADIR/mustc
+dest_path=$DATADIR/mustc/raw/download
 mkdir -p $dest_path
-echo "Destination: " $dest_path
+echo "Downloading MuST-C data to " $dest_path
 
 # https://www.quora.com/How-do-I-download-a-very-large-file-from-Google-Drive/answer/Shane-F-Carr
 # https://developers.google.com/oauthplayground/
