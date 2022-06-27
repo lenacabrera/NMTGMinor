@@ -10,7 +10,6 @@ def create_language_pair_dict(en, tl):
 def extract_parallel_sentences(en_cs_path, en_de_path, en_es_path, en_fr_path, en_it_path, en_nl_path, en_pt_path, en_ro_path, en_ru_path, 
     cs_path, de_path, es_path, fr_path, it_path, nl_path, pt_path, ro_path, ru_path, out_dir):
 
-    print("Create language pair dicts...")
     en_cs_d = create_language_pair_dict(en_cs_path, cs_path)
     en_de_d = create_language_pair_dict(en_de_path, de_path)
     en_es_d = create_language_pair_dict(en_es_path, es_path)
@@ -37,8 +36,7 @@ def extract_parallel_sentences(en_cs_path, en_de_path, en_es_path, en_fr_path, e
                 "ru": en_ru_d[en_l],
             }
 
-    print(f"Found {len(par)} matches")
-    print("Saving files...")
+    print(f"{len(par)} remaining sentences.")
     with open(out_dir + "en.s", "w") as en_f:
         with open(out_dir + "cs.s", "w") as cs_f:
             with open(out_dir + "de.s", "w") as de_f:
