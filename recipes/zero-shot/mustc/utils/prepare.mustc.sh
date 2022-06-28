@@ -46,6 +46,18 @@ find . -depth -type d -name dev -execdir mv {} valid \;
 if [[ $REMOVE_OVERLAP_W_MUSTSHE == true ]]; then
     echo "** Remove sentences overlaping with MuST-SHE data"
     bash $SCRIPTDIR/mustc/utils/remove.overlap.mustshe.mustc.sh
+
+    # add zero-shot directions to test data
+    for set in tst-COMMON tst-HE; do
+        set_dir=$DATADIR/mustc/raw/twoway/$set
+        LAN="cs de es fr it nl pt ro ru"
+        for sl in $LAN; do
+            for tl in $LAN; do
+                cp -f $set_dir/$sl-en.s $set_dir/$sl-$tl.s
+                cp -f $set_dir/$sl-en.s $set_dir/$tl-$sl.t
+            done
+        done
+    done
 fi
 
 echo "** Create multi-way MuST-C corpus"

@@ -24,35 +24,26 @@ def check_overlap(en_cs_mustc, en_de_mustc, en_es_mustc, en_fr_mustc, en_it_must
     num_before = len(en_cs) + len(en_de) + len(en_es) + len(en_fr) + len(en_it) + len(en_nl) + len(en_pt) + len(en_ro) + len(en_ru)
 
     with open(en_par_mustshe, "r") as ef:
-        en_mustshe = ef.read().splitlines()\
+        en_mustshe = ef.read().splitlines()
 
     for l in tqdm.tqdm(en_mustshe):
         if l in en_cs.keys():
-            # print("en-cs")
             del en_cs[l]
         if l in en_de.keys():
-            # print("en-de")
             del en_de[l]
         if l in en_es.keys():
-            # print("en-es")
             del en_es[l]
         if l in en_fr.keys():
-            # print("en-fr")
             del en_fr[l]
         if l in en_it.keys():
-            # print("en-it")
             del en_it[l]
         if l in en_nl.keys():
-            # print("en-nl")
             del en_nl[l]
         if l in en_pt.keys():
-            # print("en-pt")
             del en_pt[l]
         if l in en_ro.keys():
-            # print("en-ro")
             del en_ro[l]
         if l in en_ru.keys():
-            # print("en-ru")
             del en_ru[l]
         
     num_after = len(en_cs) + len(en_de) + len(en_es) + len(en_fr) + len(en_it) + len(en_nl) + len(en_pt) + len(en_ro) + len(en_ru)
@@ -72,7 +63,7 @@ def check_overlap(en_cs_mustc, en_de_mustc, en_es_mustc, en_fr_mustc, en_it_must
                 tf.write(l + "\n")
     # de
     with open(out_dir + "en-de.s", "w") as sf:
-        with open(out_dir + "en-de.s", "w") as tf:
+        with open(out_dir + "de-en.t", "w") as tf:
             for l in en_de.keys():
                 sf.write(l + "\n")
                 tf.write(l + "\n")
