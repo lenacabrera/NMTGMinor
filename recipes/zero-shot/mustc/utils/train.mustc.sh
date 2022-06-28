@@ -2,13 +2,11 @@
 
 # Note these configurations:
 # - shared src tgt vocabulary
-# - language embedding on decoder input (to force correct language), additive or concatenative
+# - language embedding on decoder input (to force correct language), addtive or concatenative
 # - Tgt language token replaces normal BOS token
 
-# bash recipes/zero-shot/train.sh mustc/prepro_20000_subwordnmt/binarized_mmem baseline_mustc_new
-
-input=$1
-name=$2
+input=$1  # prepro_dir
+name=$2   # model
 
 size=512
 if [ $# -ne 2 ]; then
@@ -17,7 +15,7 @@ fi
 innersize=$((size*4))
 
 if [ -z $LAYER ]; then
-    LAYER=5
+    LAYER=8
 fi
 
 if [ -z $TRANSFORMER ]; then
@@ -47,6 +45,7 @@ fi
 if [ ! -z "$FP16" ]; then
     gpu_string_train=$gpu_string_train" -fp16 -fp16_mixed"
 fi
+
 echo 'GPU parameters: '$gpu_string_train
 
 if [ -z $OPTIM ]; then
@@ -69,7 +68,7 @@ if [ -z "$WUS" ]; then
 fi
 
 if [ -z "$EPOCHS" ]; then
-    EPOCHS=64
+    EPOCHS=128
 fi
 
 if [ -z "$HEAD" ]; then
@@ -92,16 +91,8 @@ if [ -z "$MULTILAN" ]; then
     MULTILAN=false
 fi
 
-if [ -z "$LAN_EMB" ]; then
-    LAN_EMB=true
-fi
-
 if [ "$LAN_EMB" == true ]; then
     magic_str=$magic_str" -use_language_embedding"
-fi
-
-if [ -z "$LAN_EMB_CONCAT" ]; then
-    LAN_EMB_CONCAT=true
 fi
 
 if [ "$LAN_EMB_CONCAT" == true ]; then
@@ -116,47 +107,47 @@ if [ -z "$DEATH" ]; then
     DEATH=0.0
 fi
 
-BASEDIR=$WORKDIR
-
+mkdir -p $NMTDIR/../output/${name}
 mkdir -p $BASEDIR/model/${name}/checkpoints/
-echo $BASEDIR/data/${input}/train
 
-DATE_WITH_TIME=`date "+%Y%m%d-%H%M%S"`
-
+DATE_AND_TIME=`date "+%Y%m%d-%H%M%S"`
+echo "data in:" $BASEDIR/model/${name}/train
 python3 -u $NMTDIR/train.py \
-        -data $BASEDIR/data/${input}/train \
+        -data $BASEDIR/model/${name}/train \
         -data_format mmem \
-       -save_model $BASEDIR/model/${name}/checkpoints/model \
-       -model $TRANSFORMER \
-       -batch_size_words $BATCH_SIZE \
-       -batch_size_update 24568 \
-       -batch_size_sents 9999 \
-       -batch_size_multiplier 8 \
-       -checkpointing 0 \
-       -layers $LAYER \
-       -model_size $size \
-       -inner_size $innersize \
-       -n_heads $HEAD \
-       -dropout 0.2 \
-       -attn_dropout 0.2 \
-       -word_dropout 0.1 \
-       -emb_dropout 0.2 \
-       -label_smoothing 0.1 \
-       -epochs $EPOCHS \
-       $optim_str \
-       -learning_rate $LR \
-       -normalize_gradient \
-       -warmup_steps $WUS \
-       -tie_weights \
-       -seed $SEED \
-       -log_interval 1000 \
-       -death_rate $DEATH \
-       -join_embedding \
-       -update_frequency -1 \
-        $magic_str $gpu_string_train &> $NMTDIR/../output/${DATE_WITH_TIME}_train_mustc.log
-    #    $magic_str $gpu_string_train &> $BASEDIR/model/${name}/train.log
+        -save_model $BASEDIR/model/${name}/checkpoints/model \
+        -model $TRANSFORMER \
+        -batch_size_words $BATCH_SIZE \
+        -batch_size_update 24568 \
+        -batch_size_sents 9999 \
+        -batch_size_multiplier 8 \
+        -checkpointing 0 \
+        -layers $LAYER \
+        -encoder_layers $ENC_LAYER \
+        -model_size $size \
+        -inner_size $innersize \
+        -n_heads $HEAD \
+        -dropout 0.2 \
+        -attn_dropout 0.2 \
+        -word_dropout 0.1 \
+        -emb_dropout 0.2 \
+        -label_smoothing 0.1 \
+        -epochs $EPOCHS \
+        $optim_str \
+        -learning_rate $LR \
+        -normalize_gradient \
+        -warmup_steps $WUS \
+        -tie_weights \
+        -seed $SEED \
+        -log_interval 1000 \
+        -death_rate $DEATH \
+        -join_embedding \
+        -data_format mmem \
+        -update_frequency -1 \
+        $magic_str $gpu_string_train &> $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log
+        # $magic_str $gpu_string_train &> $BASEDIR/model/${name}/{$DATE_AND_TIME}_train.log
 
-cp $NMTDIR/../output/${DATE_WITH_TIME}_train_mustc.log $BASEDIR/model/${name}/${DATE_WITH_TIME}_train_mustc.log
+cp $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log $BASEDIR/model/${name}/${DATE_AND_TIME}_train.log
 checkpoints=""
 
 for f in `ls $BASEDIR/model/${name}/checkpoints/model_ppl_*`
@@ -166,7 +157,7 @@ done
 checkpoints=`echo $checkpoints | sed -e "s/|$//g"`
 
 python3 -u $NMTDIR/average_checkpoints.py $gpu_string_avg \
-					-models $checkpoints \
-					-output $BASEDIR/model/${name}/model.pt
+        -models $checkpoints \
+        -output $BASEDIR/model/${name}/model.pt
 
 # rm -r $BASEDIR/tmp/${name}/
