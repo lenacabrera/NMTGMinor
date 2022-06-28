@@ -4,25 +4,24 @@ set -eu
 
 export MODEL=$1 # model name
 
-# LAN="de en"
 LAN="cs de en es fr it nl pt ro ru"
 
-mkdir $OUTDIR/$MODEL/mustc -p
+mkdir $OUTDIR/$MODEL/mustc/multiway -p
 
 for sl in $LAN; do
     for tl in $LAN; do
-        if [ "$sl" != "$tl" ] && ( [ "$sl" == "en" ] || [ "$tl" == "en" ] ); then
+        if [ "$sl" != "$tl" ]; then
 
             echo $sl "->" $tl
 
-            pred_src=$DATADIR/mustc/prepro_20000_subwordnmt/test/$sl-$tl.s # path to tokenized test data
-            out=$OUTDIR/$MODEL/mustc/$sl-$tl.pred
+            pred_src=$DATADIR/mustc/prepro_20000_subwordnmt/multiway/test/$sl-$tl.s # path to tokenized test data
+            out=$OUTDIR/$MODEL/mustc/multiway/$sl-$tl.pred
 
             bos='#'${tl^^}
 
             python3 -u $NMTDIR/translate.py \
                     -gpu $GPU \
-                    -model $WORKDIR/model/$MODEL/model.pt \
+                    -model $WORKDIR/model/$MODEL/prepro_20000_subwordnmt/multiway/model.pt \
                     -src $pred_src \
                     -batch_size 128 \
                     -verbose \
@@ -40,11 +39,13 @@ for sl in $LAN; do
             
             $MOSESDIR/scripts/tokenizer/detokenizer.perl -l $tl < $out.tok > $out.detok
             $MOSESDIR/scripts/recaser/detruecase.perl < $out.detok > $out.pt
+
+            rm $out.tok $out.detok
         
             echo '===========================================' $sl $tl
             # Evaluate against original reference  
-            cat $out.pt | sacrebleu $DATADIR/mustc/raw/tst-COMMON/$sl-$tl.t > $OUTDIR/$MODEL/mustc/$sl-$tl.test.res
-            cat $OUTDIR/$MODEL/mustc/$sl-$tl.test.res
+            cat $out.pt | sacrebleu $DATADIR/mustc/raw/multiway/tst-COMMON/$sl-$tl.t > $OUTDIR/$MODEL/mustc/multiway/$sl-$tl.test.res
+            cat $OUTDIR/$MODEL/mustc/multiway/$sl-$tl.test.res
         fi
     done
 done
