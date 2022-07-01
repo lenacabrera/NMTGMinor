@@ -3,36 +3,40 @@ source ./recipes/zero-shot/config.sh
 set -eu
 
 export MODEL=$1 # model name
+export PIVOT=$2
+export TRAIN_SET=$3
+export PREPRO_DIR=prepro_20000_subwordnmt
 
 LAN="es it fr"
 
-mkdir $OUTDIR/$MODEL/mustshe/pivot -p
-mkdir $OUTDIR/$MODEL/mustshe/pivot/correct_ref -p
-mkdir $OUTDIR/$MODEL/mustshe/pivot/wrong_ref -p
+mkdir $OUTDIR/$MODEL/mustshe/$TRAIN_SET -p
+mkdir $OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot -p
+mkdir $OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/correct_ref -p
+mkdir $OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/wrong_ref -p
 
 # compare results for correct and wrong reference to determine bias
 for ref in correct_ref wrong_ref; do  
     for src in $LAN; do
         for tgt in $LAN; do
-            if [ $src != $tgt ]; then
+            if [[ $src != $tgt ]] && [[ $src != $PIVOT ]] && [[ $tgt != $PIVOT ]]; then
                 
-                echo $src " -> en -> " $tgt
+                echo $src " -> $PIVOT -> " $tgt
 
                 # (1) pivot into English
                 export sl=$src
-                export tl=en
+                export tl=$PIVOT
 
-                ln -s -f $DATADIR/mustshe/prepro_20000_subwordnmt/$ref/$sl-$tl.s $OUTDIR/$MODEL/mustshe/pivot/$ref/${src}-en-${tgt}.real.pivotin.s # symbolic link
-            
-                pred_src=$OUTDIR/$MODEL/mustshe/pivot/$ref/${src}-en-${tgt}.real.pivotin.s
-                out=$OUTDIR/$MODEL/mustshe/pivot/$ref/${src}-en-${tgt}.real.pivotin.t
+                ln -s -f $DATADIR/mustshe/$PREPRO_DIR/$ref/$sl-$tl.s $OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/$ref/${src}-$PIVOT-${tgt}.real.pivotin.s # symbolic link
+                
+                pred_src=$OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/$ref/${src}-$PIVOT-${tgt}.real.pivotin.s
+                out=$OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/$ref/${src}-$PIVOT-${tgt}.real.pivotin.t
 
                 bos='#'${tl^^}  # beginning of sentence token: target language
 
-                echo "Translate to EN..."
+                echo "Translate to $PIVOT..."
                 python3 -u $NMTDIR/translate.py \
                         -gpu $GPU \
-                        -model $WORKDIR/model/$MODEL/model.pt \
+                        -model $WORKDIR/model/$MODEL/$PREPRO_DIR/$TRAIN_SET/model.pt \
                         -src $pred_src \
                         -batch_size 128 \
                         -verbose \
@@ -46,20 +50,20 @@ for ref in correct_ref wrong_ref; do
                         -bos_token $bos
 
                 # (2) pivot out of English
-                export sl=en
+                export sl=$PIVOT
                 export tl=$tgt
 
-                ln -s -f $OUTDIR/$MODEL/mustshe/pivot/$ref/${src}-en-${tgt}.real.pivotin.t $OUTDIR/$MODEL/mustshe/pivot/$ref/${src}-en-${tgt}.real.pivotout.s
+                ln -s -f $OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/$ref/${src}-$PIVOT-${tgt}.real.pivotin.t $OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/$ref/${src}-$PIVOT-${tgt}.real.pivotout.s
 
-                pred_src=$OUTDIR/$MODEL/mustshe/pivot/$ref/${src}-en-${tgt}.real.pivotout.s
-                out=$OUTDIR/$MODEL/mustshe/pivot/$ref/${src}-en-${tgt}.real.pivotout.t
+                pred_src=$OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/$ref/${src}-$PIVOT-${tgt}.real.pivotout.s
+                out=$OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/$ref/${src}-$PIVOT-${tgt}.real.pivotout.t
 
                 bos='#'${tl^^}
 
-                echo "Translate from EN..."
+                echo "Translate from $PIVOT..."
                 python3 -u $NMTDIR/translate.py \
                         -gpu $GPU \
-                        -model $WORKDIR/model/$MODEL/model.pt \
+                        -model $WORKDIR/model/$MODEL/$PREPRO_DIR/$TRAIN_SET/model.pt \
                         -src $pred_src \
                         -batch_size 128 \
                         -verbose \
@@ -83,8 +87,8 @@ for ref in correct_ref wrong_ref; do
             
                 echo '===========================================' $src $tgt 
                 # Evaluate against original reference  
-                cat $out.pt | sacrebleu $DATADIR/mustshe/orig/$ref/$src-$tgt.t > $out.res
-                # cat $out.res
+                cat $out.pt | sacrebleu $DATADIR/mustshe/raw/$ref/$src-$tgt.t > $out.res
+                cat $out.res
             fi
         done
     done

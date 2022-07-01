@@ -3,10 +3,22 @@ source ./recipes/zero-shot/config.sh
 set -eu
 
 export MODEL=$1 # model name
+export TRAIN_SET=$2
+export EVAL_SET=$3
+export PREPRO_DIR=prepro_20000_subwordnmt
+
+if [ -z "$TRAIN_SET" ]; then
+    TRAIN_SET=twoway
+fi
+
+if [ -z "$EVAL_SET" ]; then
+    EVAL_SET=multiway
+fi
+
+mkdir $OUTDIR/$MODEL/mustc -p
+mkdir $OUTDIR/$MODEL/mustc/$TRAIN_SET -p
 
 LAN="cs de en es fr it nl pt ro ru"
-
-mkdir $OUTDIR/$MODEL/mustc/multiway -p
 
 for sl in $LAN; do
     for tl in $LAN; do
@@ -14,14 +26,14 @@ for sl in $LAN; do
 
             echo $sl "->" $tl
 
-            pred_src=$DATADIR/mustc/prepro_20000_subwordnmt/multiway/test/$sl-$tl.s # path to tokenized test data
-            out=$OUTDIR/$MODEL/mustc/multiway/$sl-$tl.pred
+            pred_src=$DATADIR/mustc/$PREPRO_DIR/$EVAL_SET/test/$sl-$tl.s # path to tokenized test data
+            out=$OUTDIR/$MODEL/mustc/$TRAIN_SET/$sl-$tl.pred
 
             bos='#'${tl^^}
 
             python3 -u $NMTDIR/translate.py \
                     -gpu $GPU \
-                    -model $WORKDIR/model/$MODEL/prepro_20000_subwordnmt/multiway/model.pt \
+                    -model $WORKDIR/model/$MODEL/$PREPRO_DIR/$TRAIN_SET/model.pt \
                     -src $pred_src \
                     -batch_size 128 \
                     -verbose \
@@ -44,8 +56,8 @@ for sl in $LAN; do
         
             echo '===========================================' $sl $tl
             # Evaluate against original reference  
-            cat $out.pt | sacrebleu $DATADIR/mustc/raw/multiway/tst-COMMON/$sl-$tl.t > $OUTDIR/$MODEL/mustc/multiway/$sl-$tl.test.res
-            cat $OUTDIR/$MODEL/mustc/multiway/$sl-$tl.test.res
+            cat $out.pt | sacrebleu $DATADIR/mustc/raw/$EVAL_SET/tst-COMMON/$sl-$tl.t > $OUTDIR/$MODEL/mustc/$TRAIN_SET/$sl-$tl.test.res
+            cat $OUTDIR/$MODEL/mustc/$TRAIN_SET/$sl-$tl.test.res
         fi
     done
 done
