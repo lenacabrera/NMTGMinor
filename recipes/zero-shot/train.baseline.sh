@@ -16,7 +16,7 @@ export EPOCHS=64
 export LR=2
 
 export SKIP_TRAIN=false
-export MULTILAN=true
+export MULTILAN=true   # CHECK
 export LAN_EMB=true
 export LAN_EMB_CONCAT=true
 
@@ -35,6 +35,6 @@ for f in $BASEDIR/data/$PREPRO_DIR/binarized_mmem/*; do
         ln -s $f $BASEDIR/model/${MODEL}/$(basename -- "$fullfile")
 done
 
-./train.sh $PREPRO_DIR $MODEL
+$SCRIPTDIR/train.sh $PREPRO_DIR $MODEL
 
 echo 'Done training'

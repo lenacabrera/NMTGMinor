@@ -107,11 +107,28 @@ if [ -z "$DEATH" ]; then
     DEATH=0.0
 fi
 
+if [ ! -z "$RESIDUAL_AT" ]; then
+    magic_str=$magic_str" -change_residual_at $RESIDUAL_AT"
+fi
+
+if [ ! -z "$RESIDUAL" ]; then
+    magic_str=$magic_str" -change_residual $RESIDUAL"
+fi
+
+if [ ! -z "$QUERY_AT" ]; then
+    magic_str=$magic_str" -change_att_query_at $QUERY_AT"
+fi
+
+if [ ! -z "$QUERY" ]; then
+    magic_str=$magic_str" -change_att_query $QUERY"
+fi
+
 mkdir -p $NMTDIR/../output/${name}
 mkdir -p $BASEDIR/model/${name}/checkpoints/
 
 DATE_AND_TIME=`date "+%Y%m%d-%H%M%S"`
 echo "data in:" $BASEDIR/model/${name}/train
+echo "epochs: $EPOCHS"
 python3 -u $NMTDIR/train.py \
         -data $BASEDIR/model/${name}/train \
         -data_format mmem \
