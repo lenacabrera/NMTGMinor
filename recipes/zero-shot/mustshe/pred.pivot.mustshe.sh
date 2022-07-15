@@ -7,7 +7,7 @@ export PIVOT=$2
 export TRAIN_SET=$3
 export PREPRO_DIR=prepro_20000_subwordnmt
 
-LAN="es it fr"
+LAN="en es it fr"
 
 mkdir $OUTDIR/$MODEL/mustshe/$TRAIN_SET -p
 mkdir $OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot -p
