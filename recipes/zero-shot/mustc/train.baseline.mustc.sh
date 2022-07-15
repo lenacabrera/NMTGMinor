@@ -36,7 +36,6 @@ echo $MODEL
 mkdir $WORKDIR/model/${MODEL} -p
 
 for f in $DATADIR/$PREPRO_DIR/binarized_mmem/*; do
-        echo $WORKDIR/model/${MODEL}/$(basename -- "$fullfile")
         ln -s -f $f $WORKDIR/model/${MODEL}/$(basename -- "$fullfile")
 done
 
