@@ -17,8 +17,8 @@ mkdir -p $TOKDIR
 mkdir -p $TOKDIR/correct_ref 
 mkdir -p $TOKDIR/wrong_ref 
 
-echo "Prepare raw data..."
-bash $SCRIPTDIR/mustshe/prepare.mustshe.sh $REMOVE_OVERLAP_W_MUSTC
+# echo "Prepare raw data..."
+# bash $SCRIPTDIR/mustshe/prepare.mustshe.sh $REMOVE_OVERLAP_W_MUSTC
 
 echo "Preprocessing with previously trained BPE..."
 for ref in correct_ref wrong_ref; do
@@ -30,8 +30,8 @@ for ref in correct_ref wrong_ref; do
                                 src_file=$DATADIR/mustshe/raw/$ref/$set.s
                                 cat $src_file | \
                                         perl $MOSESDIR/scripts/tokenizer/tokenizer.perl -l ${sl} | \
-                                        $MOSESDIR/scripts/recaser/truecase.perl --model $WORKDIR/model/$PREPRO_DIR/mustc/truecase-model.s | \
-                                        $BPEDIR/subword_nmt/apply_bpe.py -c $WORKDIR/model/$PREPRO_DIR/mustc/codec --vocabulary $WORKDIR/model/$PREPRO_DIR/mustc/voc.s --vocabulary-threshold 50 \
+                                        $MOSESDIR/scripts/recaser/truecase.perl --model $WORKDIR/model/$PREPRO_DIR/mustc/multiway/truecase-model.s | \
+                                        $BPEDIR/subword_nmt/apply_bpe.py -c $WORKDIR/model/$PREPRO_DIR/mustc/multiway/codec --vocabulary $WORKDIR/model/$PREPRO_DIR/mustc/multiway/voc.s --vocabulary-threshold 50 \
                                                 > $tok_file
                         fi
                 done

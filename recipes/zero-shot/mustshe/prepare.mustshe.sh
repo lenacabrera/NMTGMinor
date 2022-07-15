@@ -10,7 +10,7 @@ mkdir -p $DATADIR/mustshe/raw/wrong_ref
 # TODO add mode to args
 python3 -u $NMTDIR/utils/prepro_tsv_mustshe.py $DATADIR/mustshe/raw/ correct_ref wrong_ref
 
-if [ $REMOVE_OVERLAP_W_MUSTC == true ]; then
+if [[ $REMOVE_OVERLAP_W_MUSTC == true ]]; then
     echo "Remove sentences overlaping with MuST-C data"
     bash $SCRIPTDIR/mustshe/remove.overlap.mustc.mustshe.sh
 fi

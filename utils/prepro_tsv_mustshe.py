@@ -36,7 +36,10 @@ def extract_from_tsv(data_dir_path,correct_ref_dir_name, wrong_ref_dir_name):
         src = row[4]
         ref = row[5]
         ref_wrong = row[6]
-        map_es[row[0]] = [src, ref, ref_wrong]
+        speaker_gender = row[8]
+        category = row[9]
+        gender_terms = row[12]
+        map_es[row[0]] = [src, ref, ref_wrong, speaker_gender, category, gender_terms]
         if mode.name == MODE.NONPARA.name:
             en_es_c.write(src + '\n')
             es_en_c.write(ref + '\n')
@@ -60,7 +63,10 @@ def extract_from_tsv(data_dir_path,correct_ref_dir_name, wrong_ref_dir_name):
         src = row[4]
         ref = row[5]
         ref_wrong = row[6]
-        map_it[row[0]] = [src, ref, ref_wrong]
+        speaker_gender = row[8]
+        category = row[9]
+        gender_terms = row[12]
+        map_it[row[0]] = [src, ref, ref_wrong, speaker_gender, category, gender_terms]
         if mode.name == MODE.NONPARA.name:
             en_it_c.write(src + '\n')
             it_en_c.write(ref + '\n')
@@ -85,7 +91,10 @@ def extract_from_tsv(data_dir_path,correct_ref_dir_name, wrong_ref_dir_name):
         ref = row[5]
         ref_wrong = row[6]
         ref = ref.replace(u'♪ ', '')  # replace special character
-        map_fr[row[0]] = [src, ref, ref_wrong]
+        speaker_gender = row[8]
+        category = row[9]
+        gender_terms = row[12]
+        map_fr[row[0]] = [src, ref, ref_wrong, speaker_gender, category, gender_terms]
         if mode.name == MODE.NONPARA.name:
             en_fr_c.write(src + '\n')
             fr_en_c.write(ref + '\n')
@@ -108,6 +117,10 @@ def extract_from_tsv(data_dir_path,correct_ref_dir_name, wrong_ref_dir_name):
             par_it_w = open(os.path.join(w_ref_dir, "it_par.s"), "w", encoding='utf-8')
             par_fr_w = open(os.path.join(w_ref_dir, "fr_par.s"), "w", encoding='utf-8')
             par_en_w = open(os.path.join(w_ref_dir, "en_par.s"), "w", encoding='utf-8')
+
+            es_add_info = open(os.path.join(file_path, "es_add.csv"), "w", encoding='utf-8')
+            fr_add_info = open(os.path.join(file_path, "fr_add.csv"), "w", encoding='utf-8')
+            it_add_info = open(os.path.join(file_path, "it_add.csv"), "w", encoding='utf-8')
             
             for row in csv_reader:
                 it_id = row[0]
@@ -131,6 +144,18 @@ def extract_from_tsv(data_dir_path,correct_ref_dir_name, wrong_ref_dir_name):
                         par_it_w.write(map_it[it_id][2] + "\n")
                         par_fr_w.write(map_fr[fr_id][2] + "\n")
                         par_en_w.write(es_src + "\n")
+
+                        es_add_info.write(map_es[es_id][3] + ",")
+                        es_add_info.write(map_es[es_id][4] + ",")
+                        es_add_info.write(map_es[es_id][5] + "\n")
+
+                        it_add_info.write(map_it[it_id][3] + ",")
+                        it_add_info.write(map_it[it_id][4] + ",")
+                        it_add_info.write(map_it[it_id][5] + "\n")
+
+                        fr_add_info.write(map_fr[fr_id][3] + ",")
+                        fr_add_info.write(map_fr[fr_id][4] + ",")
+                        fr_add_info.write(map_fr[fr_id][5] + "\n")
                     else:
                         if mode.name == MODE.PARA_ID.name:
                             continue
