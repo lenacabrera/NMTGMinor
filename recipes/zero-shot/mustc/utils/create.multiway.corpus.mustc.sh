@@ -50,7 +50,7 @@ python -u $NMTDIR/utils/multi_parallel_mustc.py \
     $DATADIR/mustc/raw/twoway/valid/en-ru.t \
     $DATADIR/mustc/raw/multiway/valid/
 
-echo "====== Test data (tst-COMMON)"
+echo "====== Test data (tst-COMMON) -> required for pivoting"
 python -u $NMTDIR/utils/multi_parallel_mustc.py \
     $DATADIR/mustc/raw/twoway/tst-COMMON/en-cs.s \
     $DATADIR/mustc/raw/twoway/tst-COMMON/en-de.s \
@@ -72,7 +72,7 @@ python -u $NMTDIR/utils/multi_parallel_mustc.py \
     $DATADIR/mustc/raw/twoway/tst-COMMON/en-ru.t \
     $DATADIR/mustc/raw/multiway/tst-COMMON/
 
-echo "====== Test data (tst-HE)"
+echo "====== Test data (tst-HE) -> required for pivoting"
 python -u $NMTDIR/utils/multi_parallel_mustc.py \
     $DATADIR/mustc/raw/twoway/tst-HE/en-cs.s \
     $DATADIR/mustc/raw/twoway/tst-HE/en-de.s \

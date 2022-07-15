@@ -1,10 +1,23 @@
 model_name=transformer
 prepro_name=mustc/prepro_20000_subwordnmt
-nway=twoway  # twoway, multiway
+nway=twoway  # twoway, multiway, twowayDE
 
 if [ $nway == twoway ]; then
     S_LAN="cs|de|en|en|en|en|en|en|en|en|en|es|fr|it|nl|pt|ro|ru" # has to be sorted alphabetically
     T_LAN="en|en|cs|de|es|fr|it|nl|pt|ro|ru|en|en|en|en|en|en|en"
+elif [ $nway == multiwayES ]; then
+    S_LAN="cs|de|en|es|es|es|es|es|es|es|es|es|fr|it|nl|pt|ro|ru" # has to be sorted alphabetically
+    T_LAN="es|es|es|cs|de|en|fr|it|nl|pt|ro|ru|es|es|es|es|es|es"
+elif [ $nway == multiwayFR ]; then
+    S_LAN="cs|de|en|es|fr|fr|fr|fr|fr|fr|fr|fr|fr|it|nl|pt|ro|ru" # has to be sorted alphabetically
+    T_LAN="fr|fr|fr|fr|cs|de|en|es|it|nl|pt|ro|ru|fr|fr|fr|fr|fr"
+elif [ $nway == multiwayES ]; then
+    S_LAN="cs|de|en|es|fr|it|it|it|it|it|it|it|it|it|nl|pt|ro|ru" # has to be sorted alphabetically
+    T_LAN="it|it|it|it|it|cs|de|en|es|fr|nl|pt|ro|ru|it|it|it|it"
+elif [ $nway == multiway_es_it_fr ]; then
+    S_LAN="cs|cs|cs|de|de|de|en|en|en|es|es|es|es|es|es|es|es|es|fr|fr|fr|fr|fr|fr|fr|fr|fr|it|it|it|it|it|it|it|it|it|nl|nl|nl|pt|pt|pt|ro|ro|ro|ru|ru|ru" # has to be sorted alphabetically
+    T_LAN="es|fr|it|es|fr|it|es|fr|it|cs|de|en|fr|it|nl|pt|ro|ru|cs|de|en|es|it|nl|pt|ro|ru|cs|de|en|es|fr|nl|pt|ro|ru|es|fr|it|es|fr|it|es|fr|it|es|fr|it"
+
 else 
     # multiway
     S_LAN="cs|cs|cs|cs|cs|cs|cs|cs|cs|de|de|de|de|de|de|de|de|de|en|en|en|en|en|en|en|en|en|es|es|es|es|es|es|es|es|es|fr|fr|fr|fr|fr|fr|fr|fr|fr|it|it|it|it|it|it|it|it|it|nl|nl|nl|nl|nl|nl|nl|nl|nl|pt|pt|pt|pt|pt|pt|pt|pt|pt|ro|ro|ro|ro|ro|ro|ro|ro|ro|ru|ru|ru|ru|ru|ru|ru|ru|ru" # has to be sorted alphabetically

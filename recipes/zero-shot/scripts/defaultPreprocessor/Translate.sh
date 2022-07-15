@@ -43,7 +43,6 @@ elif [ -f $WORKDIR/data/$origname/raw/tst-COMMON/$set.s ]; then
     xml=0
 fi
 echo "inFile: " $inFile
-echo "new: " $WORKDIR/data/$origname/raw/tst-COMMON/$set.s
 
 # TOKENIZE, SMARTCASE, BPE
 if [ $xml -eq 1 ]; then

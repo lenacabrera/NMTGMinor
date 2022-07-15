@@ -27,6 +27,7 @@ mkdir -p $WORKDIR/data/${input}/${prepro_name}/${nway}/test/
 
 
 xml=0
+echo $WORKDIR/data/$input/raw/${nway}/tst-COMMON/$set.s
 if [ -f $WORKDIR/data/$input/raw/${nway}/tst-COMMON/$set.s ]; then
     inFile=$WORKDIR/data/$input/raw/${nway}/tst-COMMON/$set.s
     xml=0
