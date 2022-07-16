@@ -20,6 +20,27 @@ def create_language_pair_dict(en, es, fr, it):
                         }
                     return en_es_fr_it_d
 
+
+def create_add_dict(en, es_add, fr_add, it_add):
+    with open(en, "r") as ef:
+        with open(es_add, "r") as es_add_f:
+            with open(fr_add, "r") as fr_add_f:
+                with open(it_add, "r") as it_add_f:
+                    en_lines = ef.read().splitlines()
+                    es_add_lines = es_add_f.read().splitlines()
+                    fr_add_lines = fr_add_f.read().splitlines()
+                    it_add_lines = it_add_f.read().splitlines()
+
+                    en_add = {}
+                    for l, el, fl, il in zip(en_lines, es_add_lines, fr_add_lines, it_add_lines):
+                        en_add[l] = {
+                            "es": el,
+                            "fr": fl,
+                            "it": il,
+                        }
+    return en_add
+
+
 def create_add_info_dict(en, add):
     with open(en, "r") as ef:
         with open(add, "r") as addf:
@@ -39,7 +60,6 @@ def create_add_info_dict(en, add):
                     gender_terms_cr.append(cr_wr[0])
                     gender_terms_wr.append(cr_wr[1])
 
-                all_gender_terms = add_lines_sep[2].split()
                 en_add[l] = {
                     "speaker_gender": gender_speaker,
                     "category": category,
@@ -78,17 +98,21 @@ def create_list_of_en_mustc_sentences(en_cs_mustc, en_de_mustc, en_es_mustc, en_
                                         lines.extend(en_ru_lines)
     return lines
 
-def check_overlap(en_cs_mustc, en_de_mustc, en_es_mustc, en_fr_mustc, en_it_mustc, en_nl_mustc, en_pt_mustc, en_ro_mustc, en_ru_mustc, 
-    en_par_mustshe, es_par_mustshe, fr_par_mustshe, it_par_mustshe, es_wr_par_mustshe, fr_wr_par_mustshe, it_wr_par_mustshe, 
-    es_add_mustshe, fr_add_mustshe, it_add_mustshe, out_dir, out_dir_cr, out_dir_wr):
+def check_overlap(en_cs_mustc, en_de_mustc, en_es_mustc, en_fr_mustc, en_it_mustc, en_nl_mustc, en_pt_mustc, en_ro_mustc, en_ru_mustc, en_par_mustshe, 
+                  es_par_mustshe, fr_par_mustshe, it_par_mustshe, es_speaker_mustshe, es_category_mustshe, es_gterms_mustshe, fr_speaker_mustshe, fr_category_mustshe, fr_gterms_mustshe, it_speaker_mustshe, it_category_mustshe, it_gterms_mustshe,
+                  es_wr_par_mustshe, fr_wr_par_mustshe, it_wr_par_mustshe, es_wr_speaker_mustshe, es_wr_category_mustshe, es_wr_gterms_mustshe, fr_wr_speaker_mustshe, fr_wr_category_mustshe, fr_wr_gterms_mustshe, it_wr_speaker_mustshe, it_wr_category_mustshe, it_wr_gterms_mustshe,
+                  out_dir_cr, out_dir_wr):
 
     en = create_list_of_en_mustc_sentences(en_cs_mustc, en_de_mustc, en_es_mustc, en_fr_mustc, en_it_mustc, en_nl_mustc, en_pt_mustc, en_ro_mustc, en_ru_mustc)
     mustshe_en_es_fr_it_d = create_language_pair_dict(en_par_mustshe, es_par_mustshe, fr_par_mustshe, it_par_mustshe)
     mustshe_en_wr_es_fr_it_d = create_language_pair_dict(en_par_mustshe, es_wr_par_mustshe, fr_wr_par_mustshe, it_wr_par_mustshe)
 
-    es_add = create_add_info_dict(en_par_mustshe, es_add_mustshe)
-    fr_add = create_add_info_dict(en_par_mustshe, fr_add_mustshe)
-    it_add = create_add_info_dict(en_par_mustshe, it_add_mustshe)
+    speaker = create_add_dict(en_par_mustshe, es_speaker_mustshe, fr_speaker_mustshe, it_speaker_mustshe)
+    speaker_wr = create_add_dict(en_par_mustshe, es_wr_speaker_mustshe, fr_wr_speaker_mustshe, it_wr_speaker_mustshe)
+    category = create_add_dict(en_par_mustshe, es_category_mustshe, fr_category_mustshe, it_category_mustshe)
+    category_wr = create_add_dict(en_par_mustshe, es_wr_category_mustshe, fr_wr_category_mustshe, it_wr_category_mustshe)
+    gterms = create_add_dict(en_par_mustshe, es_gterms_mustshe, fr_gterms_mustshe, it_gterms_mustshe)
+    gterms_wr = create_add_dict(en_par_mustshe, es_wr_gterms_mustshe, fr_wr_gterms_mustshe, it_wr_gterms_mustshe)
 
     en_novl = []
     es_novl = []
@@ -100,8 +124,20 @@ def check_overlap(en_cs_mustc, en_de_mustc, en_es_mustc, en_fr_mustc, en_it_must
 
     ovl = []
 
-    add_gspeaker_novl = []
-    add_category_novl = []
+    es_speaker_cr_novl = []
+    es_speaker_wr_novl = []
+    fr_speaker_cr_novl = []
+    fr_speaker_wr_novl = []
+    it_speaker_cr_novl = []
+    it_speaker_wr_novl = []
+
+    es_category_cr_novl = []
+    es_category_wr_novl = []
+    fr_category_cr_novl = []
+    fr_category_wr_novl = []
+    it_category_cr_novl = []
+    it_category_wr_novl = []
+
     es_add_gterms_cr_novl = []
     es_add_gterms_wr_novl = []
     fr_add_gterms_cr_novl = []
@@ -118,26 +154,33 @@ def check_overlap(en_cs_mustc, en_de_mustc, en_es_mustc, en_fr_mustc, en_it_must
             es_novl.append(mustshe_en_es_fr_it_d[l]["es"])
             fr_novl.append(mustshe_en_es_fr_it_d[l]["fr"])
             it_novl.append(mustshe_en_es_fr_it_d[l]["it"]) 
-
             es_wr_novl.append(mustshe_en_wr_es_fr_it_d[l]["es"])
             fr_wr_novl.append(mustshe_en_wr_es_fr_it_d[l]["fr"])
             it_wr_novl.append(mustshe_en_wr_es_fr_it_d[l]["it"])
 
-            add_gspeaker_novl.append(es_add[l]["speaker_gender"])
-            add_category_novl.append(es_add[l]["category"])
+            es_speaker_cr_novl.append(speaker[l]["es"])
+            fr_speaker_cr_novl.append(speaker[l]["fr"])
+            it_speaker_cr_novl.append(speaker[l]["it"])
+            es_speaker_wr_novl.append(speaker_wr[l]["es"])
+            fr_speaker_wr_novl.append(speaker_wr[l]["fr"])
+            it_speaker_wr_novl.append(speaker_wr[l]["it"])
 
-            es_add_gterms_cr_novl.append(es_add[l]["gender_terms_cr"])
-            es_add_gterms_wr_novl.append(es_add[l]["gender_terms_wr"])
-            fr_add_gterms_cr_novl.append(fr_add[l]["gender_terms_cr"])
-            fr_add_gterms_wr_novl.append(fr_add[l]["gender_terms_wr"])
-            it_add_gterms_cr_novl.append(it_add[l]["gender_terms_cr"])
-            it_add_gterms_wr_novl.append(it_add[l]["gender_terms_wr"])
+            es_category_cr_novl.append(category[l]["es"])
+            fr_category_cr_novl.append(category[l]["fr"])
+            it_category_cr_novl.append(category[l]["it"])
+            es_category_wr_novl.append(category_wr[l]["es"])
+            fr_category_wr_novl.append(category_wr[l]["fr"])
+            it_category_wr_novl.append(category_wr[l]["it"])
 
-    print(len(es_add_gterms_cr_novl), len(es_add_gterms_wr_novl), len(fr_add_gterms_cr_novl))
+            es_add_gterms_cr_novl.append(gterms[l]["es"])
+            fr_add_gterms_cr_novl.append(gterms[l]["fr"])
+            it_add_gterms_cr_novl.append(gterms[l]["it"])
+            es_add_gterms_wr_novl.append(gterms_wr[l]["es"])
+            fr_add_gterms_wr_novl.append(gterms_wr[l]["fr"])
+            it_add_gterms_wr_novl.append(gterms_wr[l]["it"])
 
     with open(out_dir_cr + "en_par.s", "w") as enf:
         with open(out_dir_wr + "en_par.s", "w") as enf_wr:
-            print(len(en_novl), len(mustshe_en_es_fr_it_d.keys()))
             for l in en_novl:
                 enf.write(l + "\n")
                 enf_wr.write(l + "\n")
@@ -145,11 +188,9 @@ def check_overlap(en_cs_mustc, en_de_mustc, en_es_mustc, en_fr_mustc, en_it_must
     with open(out_dir_cr + "es_par.s", "w") as esf:
         for l in es_novl:
             esf.write(l + "\n")
-
     with open(out_dir_cr + "fr_par.s", "w") as frf:
         for l in fr_novl:
             frf.write(l + "\n")
-
     with open(out_dir_cr + "it_par.s", "w") as itf:
         for l in it_novl:
             itf.write(l + "\n")
@@ -157,55 +198,69 @@ def check_overlap(en_cs_mustc, en_de_mustc, en_es_mustc, en_fr_mustc, en_it_must
     with open(out_dir_wr + "es_par.s", "w") as esf:
         for l in es_wr_novl:
             esf.write(l + "\n")
-
     with open(out_dir_wr + "fr_par.s", "w") as frf:
         for l in fr_wr_novl:
             frf.write(l + "\n")
-
     with open(out_dir_wr + "it_par.s", "w") as itf:
         for l in it_wr_novl:
             itf.write(l + "\n")
 
-
-    with open(out_dir + "speaker.csv", "w") as speakerf:
-        for l in add_gspeaker_novl:
-            speakerf.write(l + "\n")
+    with open(out_dir_cr + "es_speaker.csv", "w") as esspeakerf:
+        for l in es_speaker_cr_novl:
+            esspeakerf.write(l + "\n")
+    with open(out_dir_cr + "fr_speaker.csv", "w") as frspeakerf:
+        for l in fr_speaker_cr_novl:
+            frspeakerf.write(l + "\n")
+    with open(out_dir_cr + "it_speaker.csv", "w") as itspeakerf:
+        for l in it_speaker_cr_novl:
+            itspeakerf.write(l + "\n")
+    with open(out_dir_wr + "es_speaker.csv", "w") as esspeakerf:
+        for l in es_speaker_wr_novl:
+            esspeakerf.write(l + "\n")
+    with open(out_dir_wr + "fr_speaker.csv", "w") as frspeakerf:
+        for l in fr_speaker_wr_novl:
+            frspeakerf.write(l + "\n")
+    with open(out_dir_wr + "it_speaker.csv", "w") as itspeakerf:
+        for l in it_speaker_wr_novl:
+            itspeakerf.write(l + "\n")
     
-    with open(out_dir + "category.csv", "w") as categoryf:
-        for l in add_category_novl:
-            categoryf.write(l + "\n")
+    with open(out_dir_cr + "es_category.csv", "w") as escategoryf:
+        for l in es_category_cr_novl:
+            escategoryf.write(l + "\n")
+    with open(out_dir_cr + "fr_category.csv", "w") as frcategoryf:
+        for l in fr_category_cr_novl:
+            frcategoryf.write(l + "\n")
+    with open(out_dir_cr + "it_category.csv", "w") as itcategoryf:
+        for l in it_category_cr_novl:
+            itcategoryf.write(l + "\n")
+    with open(out_dir_wr + "es_category.csv", "w") as escategoryf:
+        for l in es_category_wr_novl:
+            escategoryf.write(l + "\n")
+    with open(out_dir_wr + "fr_category.csv", "w") as frcategoryf:
+        for l in fr_category_wr_novl:
+            frcategoryf.write(l + "\n")
+    with open(out_dir_wr + "it_category.csv", "w") as itcategoryf:
+        for l in it_category_wr_novl:
+            itcategoryf.write(l + "\n")
 
-    with open(out_dir_cr + "es_gender_terms.csv", "w") as esgtermscrf:
-        for lines in es_add_gterms_cr_novl:
-            for l in lines:
-                esgtermscrf.write(l + " ")
-            esgtermscrf.write("\n")
-    with open(out_dir_cr + "it_gender_terms.csv", "w") as itgtermscrf:
-        for lines in it_add_gterms_cr_novl:
-            for l in lines:
-                itgtermscrf.write(l + " ")
-            itgtermscrf.write("\n")
-    with open(out_dir_cr + "fr_gender_terms.csv", "w") as frgtermscrf:
-        for lines in fr_add_gterms_cr_novl:
-            for l in lines:
-                frgtermscrf.write(l + " ")
-            frgtermscrf.write("\n")
-
-    with open(out_dir_wr + "es_gender_terms.csv", "w") as esgtermswrf:
-        for lines in es_add_gterms_wr_novl:
-            for l in lines:
-                esgtermswrf.write(l + " ")
-            esgtermswrf.write("\n")
-    with open(out_dir_wr + "it_gender_terms.csv", "w") as itgtermswrf:
-        for lines in it_add_gterms_wr_novl:
-            for l in lines:
-                itgtermswrf.write(l + " ")
-            itgtermswrf.write("\n")
-    with open(out_dir_wr + "fr_gender_terms.csv", "w") as frgtermswrf:
-        for lines in fr_add_gterms_wr_novl:
-            for l in lines:
-                frgtermswrf.write(l + " ")
-            frgtermswrf.write("\n")
+    with open(out_dir_cr + "es_gterms.csv", "w") as esgtermscrf:
+        for l in es_add_gterms_cr_novl:
+            esgtermscrf.write(l + "\n")
+    with open(out_dir_cr + "it_gterms.csv", "w") as itgtermscrf:
+        for l in it_add_gterms_cr_novl:
+            itgtermscrf.write(l + "\n")
+    with open(out_dir_cr + "fr_gterms.csv", "w") as frgtermscrf:
+        for l in fr_add_gterms_cr_novl:
+            frgtermscrf.write(l + "\n")
+    with open(out_dir_wr + "es_gterms.csv", "w") as esgtermswrf:
+        for l in es_add_gterms_wr_novl:
+            esgtermswrf.write(l + "\n")
+    with open(out_dir_wr + "it_gterms.csv", "w") as itgtermswrf:
+        for l in it_add_gterms_wr_novl:
+            itgtermswrf.write(l + "\n")
+    with open(out_dir_wr + "fr_gterms.csv", "w") as frgtermswrf:
+        for l in fr_add_gterms_wr_novl:
+            frgtermswrf.write(l + "\n")
 
     print(f"Found {len(ovl)} duplicates.")
     print(f"Remaining {len(en_novl)} sentences.")
@@ -225,18 +280,37 @@ if __name__ == '__main__':
         en_pt_mustc=args[6], 
         en_ro_mustc=args[7], 
         en_ru_mustc=args[8],
+        
         en_par_mustshe=args[9],
         es_par_mustshe=args[10],
         fr_par_mustshe=args[11],
         it_par_mustshe=args[12],
-        es_wr_par_mustshe=args[13],
-        fr_wr_par_mustshe=args[14],
-        it_wr_par_mustshe=args[15],
-        es_add_mustshe=args[16],
-        fr_add_mustshe=args[17],
-        it_add_mustshe=args[18],
-        out_dir=args[19],
-        out_dir_cr=args[20],
-        out_dir_wr=args[21]
+
+        es_speaker_mustshe=args[13],
+        es_category_mustshe=args[14],
+        es_gterms_mustshe=args[15],
+        fr_speaker_mustshe=args[16],
+        fr_category_mustshe=args[17],
+        fr_gterms_mustshe=args[18],
+        it_speaker_mustshe=args[19],
+        it_category_mustshe=args[20],
+        it_gterms_mustshe=args[21],
+
+        es_wr_par_mustshe=args[22],
+        fr_wr_par_mustshe=args[23],
+        it_wr_par_mustshe=args[24],
+
+        es_wr_speaker_mustshe=args[25],
+        es_wr_category_mustshe=args[26],
+        es_wr_gterms_mustshe=args[27],
+        fr_wr_speaker_mustshe=args[28],
+        fr_wr_category_mustshe=args[29],
+        fr_wr_gterms_mustshe=args[30],
+        it_wr_speaker_mustshe=args[31],
+        it_wr_category_mustshe=args[32],
+        it_wr_gterms_mustshe=args[33],
+
+        out_dir_cr=args[34],
+        out_dir_wr=args[35]
     )
     

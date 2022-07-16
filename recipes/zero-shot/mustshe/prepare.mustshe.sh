@@ -33,3 +33,16 @@ for ref in correct_ref wrong_ref; do
         cp $f $DATADIR/mustshe/raw/$ref/$tl-$sl.t
     done
 done
+
+mkdir -p $DATADIR/mustshe/raw/correct_ref/add_info
+mkdir -p $DATADIR/mustshe/raw/wrong_ref/add_info
+
+for ref in correct_ref wrong_ref; do
+    for f in $DATADIR/mustshe/raw/$ref/*.csv; do
+        mv $f $DATADIR/mustshe/raw/$ref/add_info
+    done
+done
+
+rm $DATADIR/mustshe/raw/es_add.csv
+rm $DATADIR/mustshe/raw/it_add.csv
+rm $DATADIR/mustshe/raw/fr_add.csv

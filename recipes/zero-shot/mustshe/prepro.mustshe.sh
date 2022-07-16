@@ -17,8 +17,8 @@ mkdir -p $TOKDIR
 mkdir -p $TOKDIR/correct_ref 
 mkdir -p $TOKDIR/wrong_ref 
 
-# echo "Prepare raw data..."
-# bash $SCRIPTDIR/mustshe/prepare.mustshe.sh $REMOVE_OVERLAP_W_MUSTC
+echo "Prepare raw data..."
+bash $SCRIPTDIR/mustshe/prepare.mustshe.sh $REMOVE_OVERLAP_W_MUSTC
 
 echo "Preprocessing with previously trained BPE..."
 for ref in correct_ref wrong_ref; do
