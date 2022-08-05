@@ -34,15 +34,50 @@ for ref in correct_ref wrong_ref; do
     done
 done
 
-mkdir -p $DATADIR/mustshe/raw/correct_ref/add_info
-mkdir -p $DATADIR/mustshe/raw/wrong_ref/add_info
-
-for ref in correct_ref wrong_ref; do
-    for f in $DATADIR/mustshe/raw/$ref/*.csv; do
-        mv $f $DATADIR/mustshe/raw/$ref/add_info
-    done
-done
-
 rm $DATADIR/mustshe/raw/es_add.csv
 rm $DATADIR/mustshe/raw/it_add.csv
 rm $DATADIR/mustshe/raw/fr_add.csv
+
+mkdir -p $DATADIR/mustshe/raw/correct_ref/all
+mkdir -p $DATADIR/mustshe/raw/correct_ref/feminine
+mkdir -p $DATADIR/mustshe/raw/correct_ref/masculine
+
+mkdir -p $DATADIR/mustshe/raw/correct_ref/all/annotation
+mkdir -p $DATADIR/mustshe/raw/correct_ref/feminine/annotation
+mkdir -p $DATADIR/mustshe/raw/correct_ref/masculine/annotation
+
+mkdir -p $DATADIR/mustshe/raw/wrong_ref/all
+mkdir -p $DATADIR/mustshe/raw/wrong_ref/feminine
+mkdir -p $DATADIR/mustshe/raw/wrong_ref/masculine
+
+mkdir -p $DATADIR/mustshe/raw/wrong_ref/all/annotation
+mkdir -p $DATADIR/mustshe/raw/wrong_ref/feminine/annotation
+mkdir -p $DATADIR/mustshe/raw/wrong_ref/masculine/annotation
+
+python3 -u $NMTDIR/utils/create_separate_gender_files_mustshe.py \
+    	-raw_path $DATADIR/mustshe/raw 
+
+# for ref in correct_ref wrong_ref; do
+#     for f in $DATADIR/mustshe/raw/$ref/*\.s; do
+#         mv $f $DATADIR/mustshe/raw/$ref/all
+#     done
+#     for f in $DATADIR/mustshe/raw/$ref/*\.t; do
+#         mv $f $DATADIR/mustshe/raw/$ref/all
+#     done
+#     for f in $DATADIR/mustshe/raw/$ref/*\.csv; do
+#         mv $f $DATADIR/mustshe/raw/$ref/all/annotation
+#     done
+# done
+
+# equal feminine, masculine instances
+for ref in correct_ref wrong_ref; do
+    for f in $DATADIR/mustshe/raw/$ref/*\.s; do
+        rm $f 
+    done
+    for f in $DATADIR/mustshe/raw/$ref/*\.t; do
+        rm $f
+    done
+    for f in $DATADIR/mustshe/raw/$ref/*\.csv; do
+        rm $f
+    done
+done
