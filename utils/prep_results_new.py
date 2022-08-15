@@ -33,7 +33,8 @@ def get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl):
 
     gterms_file = open(f"{raw_path}/{ref}/{gender_set}/annotation/{l}_gterms.csv", "r", encoding="utf-8")
     speaker_file = open(f"{raw_path}/{ref}/{gender_set}/annotation/{l}_speaker.csv", "r", encoding="utf-8")
-    category_file = open(f"{raw_path}/{ref}/{gender_set}/annotation/{l}_category.csv", "r", encoding="utf-8")  
+    category_file = open(f"{raw_path}/{ref}/{gender_set}/annotation/{l}_category.csv", "r", encoding="utf-8")
+    src_file = open(f"{raw_path}/{ref}/{gender_set}/{sl}-{tl}.t", "r", encoding="utf-8")
 
     if pl == None:
         pred_file = open(f"{pred_path}/{ref}/{gender_set}/{f}", "r", encoding="utf-8")
@@ -45,14 +46,65 @@ def get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl):
     accuracies_2 = []
     accuracies_f_speaker = []
     accuracies_m_speaker = []
-
-    for pred, gterms, speaker, category in zip(pred_file, gterms_file, speaker_file, category_file):
+    i = 0
+    for src, pred, gterms, speaker, category in zip(src_file, pred_file, gterms_file, speaker_file, category_file):
         pred_gterms = []
         gterms_list = [t for t in gterms.split(" ") if (t != '' and t != '\n')]
-        for gterm in gterms_list:
-            if gterm in pred:
-                pred_gterms.append(gterm)
-        # speaker gender
+        pred_list_ = pred.replace("\n", " ").replace(",", " ").replace(";", " ").replace(".", " ").replace("?", " ").replace("¿", " ").replace("!", " ").replace("¡", " ").replace("\"", " ").split(" ")
+        src_list_ = src.replace("\n", " ").replace(",", " ").replace(";", " ").replace(".", " ").replace("?", " ").replace("¿", " ").replace("!", " ").replace("¡", " ").replace("\"", " ").split(" ")
+
+        # split words with apostrophe correctly, e.g., j'ai  -> j' ai
+        pred_list = []
+        for p in pred_list_:
+            if len(p) > 0:
+                split_list = p.split("'")
+                if len(split_list) > 1:
+                    word_with_apostrophe = split_list[0] + "'" 
+                    split_list[0] = word_with_apostrophe
+                for w in split_list:
+                    if w == "unede":
+                        pred_list.append("un")
+                        pred_list.append("de")
+                    else:
+                        pred_list.append(w.lower())
+        src_list = []
+        for s in src_list_:
+            if len(s) > 0:
+                split_list = s.split("'")
+                if len(split_list) > 1:
+                    word_with_apostrophe = split_list[0] + "'" 
+                    split_list[0] = word_with_apostrophe
+                for w in split_list:
+                    # TODO: inconsistent data in MuST-SHE
+                    if w == "unede":
+                        src_list.append("un")
+                        src_list.append("de")
+                    else:
+                        src_list.append(w.lower())
+
+        if tl != 'en':
+            prev_i = 0
+            gterms_dict = {gterm.lower():0 for gterm in gterms_list}
+            for i, gterm in enumerate(gterms_list):
+                gterm = gterm.lower()
+                # TODO: inconsistent data in MuST-SHE
+                if gterm == "entrée" and gterm not in src_list:
+                    gterm = "entré"
+                    del gterms_dict["entrée"]
+                    gterms_dict["entré"] = 0
+
+                # get positional index in src sentence
+                indices_src = []
+                indices_src = [i for i, x in enumerate(src_list, 1) if x == gterm]
+                # only use first occurrence -> indices[0]
+                src_i = indices_src[gterms_dict[gterm]]
+                gterms_dict[gterm] += 1
+                buffer_forward = 2
+                buffer_backward = 2
+                if gterm in pred_list[src_i-buffer_backward:src_i+buffer_forward]:
+                    pred_gterms.append(gterm)
+                prev_i = src_i
+
         acc = len(pred_gterms) / len(gterms_list)
         accuracies_total.append(acc)
         if speaker.replace("\n", "").lower() == "she":
@@ -65,6 +117,16 @@ def get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl):
         if "2" in category.replace("\n", ""):
             accuracies_2.append(acc)
 
+        # if len(pred_gterms) > 0:
+        # print("src sentence: ", src.split("\n")[0])
+        # print("pred sentence: ", pred.split("\n")[0])
+        # print("gendered words: ", gterms_list)
+        # print("pred gendered words: ", pred_gterms)
+        # print("accuracy: ", acc)
+        # print()
+        # if acc > 1:
+        #     print('Invalid value: accuracy greater than 1')
+            
     return accuracies_total, accuracies_1, accuracies_2, accuracies_f_speaker, accuracies_m_speaker
 
 def get_avg_accuracies(accuracies_total, accuracies_1, accuracies_2, accuracies_f_speaker, accuracies_m_speaker):
@@ -392,9 +454,9 @@ def get_empty_results_dict():
 
 def calc_and_store_results_per_lset(results, raw_path, pred_path):
     for translation in ["zero_shot", "pivot"]:
-        lsets = []
         for gender_set in ["all", "feminine", "masculine"]:
             for ref in ["correct_ref", "wrong_ref"]:
+                lsets = []
                 if translation == "zero_shot":
                     # zero-shot
                     for f in os.listdir(f"{pred_path}/{ref}/{gender_set}"):
@@ -449,10 +511,11 @@ def calc_and_store_results_per_lset(results, raw_path, pred_path):
                             else:
                                 continue
 
-            # additional metrics (I)
-            for lset in lsets:
+            lsets = set(lsets)
+            # additional metrics (I) per gender set
+            for lset in set(lsets):
                 if translation == "pivot":
-                    if lset not in results["BLEU"][translation][gender_set]["correct_ref"]:
+                    if lset not in results["BLEU"][translation][gender_set]["wrong_ref"]:
                         continue
                 ## I1. BLEU
                 results = calc_1__diff_c_w(results, "BLEU", translation, gender_set, lset)
@@ -572,7 +635,7 @@ def calc_and_store_results_avg_zeroshot_directions(results, raw_path, pred_path)
                                             results["BLEU"][translation][gender_set][ref]["zs_avg"] = []
                                         results["BLEU"][translation][gender_set][ref]["zs_avg"].append(float(bleu_pv))
                                     elif f.startswith(f"{sl}-{pl}-{tl}") and f.endswith(".pt"):
-                                    # Accuracy
+                                        # Accuracy
                                         if "zs_avg" not in results["accuracy"][translation]["total"][gender_set][ref]:
                                             results["accuracy"][translation]["total"][gender_set][ref]["zs_avg"] = []
                                             results["accuracy"][translation]["1"][gender_set][ref]["zs_avg"] = []
@@ -876,8 +939,12 @@ def calc_3__f_m_of_all_c(results, metric, translation, lset, acc_type=None):
         if lset != "sv_avg" or "sv_avg" in results[metric][translation][acc_type]["feminine"]["correct_ref"]:
             f_c = results[metric][translation][acc_type]["feminine"]["correct_ref"][lset]
             m_c = results[metric][translation][acc_type]["masculine"]["correct_ref"][lset]
-            results[metric][translation][acc_type]["f_of_all_c"][lset] = np.round((f_c / (f_c + m_c)) * 100, 1)
-            results[metric][translation][acc_type]["m_of_all_c"][lset] = np.round((m_c / (f_c + m_c)) * 100, 1)
+            if f_c > 0 and m_c > 0: 
+                results[metric][translation][acc_type]["f_of_all_c"][lset] = np.round((f_c / (f_c + m_c)) * 100, 1)
+                results[metric][translation][acc_type]["m_of_all_c"][lset] = np.round((m_c / (f_c + m_c)) * 100, 1)
+            else:
+                results[metric][translation][acc_type]["f_of_all_c"][lset] = 0.0
+                results[metric][translation][acc_type]["m_of_all_c"][lset] = 0.0
     else:
         if lset != "sv_avg" or "sv_avg" in results[metric][translation]["feminine"]["correct_ref"]:
             f_c = results[metric][translation]["feminine"]["correct_ref"][lset]
@@ -985,7 +1052,6 @@ def export_results(results, metric, df, out_path, map_train_set_model_name, trai
                             df.loc[i, "gatq_pv"] = results[metric]["pivot"]["tquality_w_gender_performance"][f"{sl}-{tl}"]
 
                     if metric == "accuracy":
-                        # print(sl, tl)
                         if i % 2 != 0 and (acc_type == "1" or acc_type == "female_speaker"):
                             continue
                         else:
@@ -1357,7 +1423,6 @@ def export_results(results, metric, df, out_path, map_train_set_model_name, trai
                 category = "male"
             
             if avg_sv and "sv_avg" in results[metric]["zero_shot"][acc_type2]["all"]["correct_ref"]:
-
                 d2_sv = {
                     "sl": "avg. supervised",
                     "model": map_train_set_model_name[train_set],
@@ -1438,6 +1503,10 @@ def main_mustshe():
         "multiwayDE.r32.q": "residual_DE",
         "multiwayES.SIM": "baseline_ES_AUX",
         "multiwayES.r32.q.SIM": "residual_ES_AUX",
+        "multiwayES.ADV": "baseline_ES_ADV",
+        "multiwayES.ADV.r32.q": "residual_ES_ADV",
+        "multiwayES.ADV.en": "baseline_ES_ADV_en",
+        "multiwayES.ADV.en.r32.q": "residual_ES_ADV_en",
     }
 
     # (2) BLEU
@@ -1472,10 +1541,11 @@ def main_mustshe():
         with open(f"{out_path}/df_acc_speaker.pkl", "rb") as file:
             df_acc_speaker = pickle.load(file)
 
-    export_results(results, "BLEU", df_bleu, out_path_bleu, map_train_set_model_name, train_set, avg_sv=False)
-    export_results(results, "accuracy", df_acc, out_path_acc, map_train_set_model_name, train_set, acc_type="total", avg_sv=False)
-    export_results(results, "accuracy", df_acc_cat, out_path_acc_cat, map_train_set_model_name, train_set, acc_type="1", avg_sv=False)
-    export_results(results, "accuracy", df_acc_speaker, out_path_acc_speaker, map_train_set_model_name, train_set, acc_type="female_speaker", avg_sv=False)
+    incl_avg_sv = False # whether to compute average results for supervised directions
+    export_results(results, "BLEU", df_bleu, out_path_bleu, map_train_set_model_name, train_set, avg_sv=incl_avg_sv)
+    export_results(results, "accuracy", df_acc, out_path_acc, map_train_set_model_name, train_set, acc_type="total", avg_sv=incl_avg_sv)
+    export_results(results, "accuracy", df_acc_cat, out_path_acc_cat, map_train_set_model_name, train_set, acc_type="1", avg_sv=incl_avg_sv)
+    export_results(results, "accuracy", df_acc_speaker, out_path_acc_speaker, map_train_set_model_name, train_set, acc_type="female_speaker", avg_sv=incl_avg_sv)
 
 if __name__ == "__main__":
     main_mustshe()
