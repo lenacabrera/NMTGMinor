@@ -2,7 +2,7 @@
 source ./config.sh
 
 export systemName=mustc
-export TRAIN_SET=multiwayES # twoway, multiwayES, multiwayESFRIT
+export TRAIN_SET=twoway.r32.q # twoway.r32.q, twoway.r32.q.new, multiwayES, multiwayES.r32.q, multiwayDE, multiwayDE.r32.q
 
 export BASEDIR=$WORKDIR
 export LAYER=5
@@ -12,7 +12,7 @@ export WUS=8000
 export HEAD=8
 
 # data setup
-export PREPRO_DIR=$systemName/prepro_20000_subwordnmt/$TRAIN_SET.ADV.en
+export PREPRO_DIR=$systemName/prepro_20000_subwordnmt/$TRAIN_SET.ADV
 export EPOCHS=10
 export LR=2
 

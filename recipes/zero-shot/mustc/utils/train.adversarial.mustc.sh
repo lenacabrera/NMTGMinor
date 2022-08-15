@@ -139,7 +139,6 @@ python3 -u $NMTDIR/train.py \
         -data $BASEDIR/model/${name}/train \
         -data_format mmem \
         -save_model $BASEDIR/model/${name}/checkpoints/model \
-        -load_from $BASEDIR/model/${name}/checkpoints/model_ppl_8.229582_e54.00.pt \
         -model $TRANSFORMER \
         -batch_size_words $BATCH_SIZE \
         -batch_size_update 24568 \
@@ -172,6 +171,7 @@ python3 -u $NMTDIR/train.py \
         -en_id 3 \
         -language_classifer_mid_layer_size 128 \
         -gradient_scale 0.1 \
+        -load_from $BASEDIR/model/${name}/checkpoints/model_ppl_5.068066_e64.00.pt \
         $magic_str $gpu_string_train &> $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log
         # $magic_str $gpu_string_train &> $BASEDIR/model/${name}/{$DATE_AND_TIME}_train.log
 
