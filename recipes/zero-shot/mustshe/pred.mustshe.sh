@@ -29,9 +29,10 @@ for ref in correct_ref wrong_ref; do
 
                     echo $sl "->" $tl
 
-                    pred_src=$DATADIR/mustshe/$PREPRO_DIR/$ref/$gender_set/$sl-$tl.s # path to tokenized test data
+                    # pred_src=$DATADIR/mustshe/$PREPRO_DIR/$ref/$gender_set/$sl-$tl.s # path to tokenized test data
+                    pred_src=$DATADIR/mustshe/$PREPRO_DIR/correct_ref/$gender_set/$sl-$tl.s # path to tokenized test data
                     out=$OUTDIR/$MODEL/mustshe/$TRAIN_SET/$ref/$gender_set/$sl-$tl.pred
-
+                    echo $pred_src
                     bos='#'${tl^^}  # beginning of sentence token: target language
 
                     python3 -u $NMTDIR/translate.py \

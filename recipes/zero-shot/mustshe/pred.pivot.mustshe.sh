@@ -37,12 +37,13 @@ for ref in correct_ref wrong_ref; do
                         echo $PIVOT
                         for suplementl in $LAN; do
                             if [[ $suplementl != $sl ]] && [[ $suplementl != $PIVOT ]]; then
-                                ln -s -f $DATADIR/mustshe/$PREPRO_DIR/$ref/$gender_set/$sl-$suplementl.s $OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/$ref/$gender_set/${src}-$PIVOT-${tgt}.real.pivotin.s # symbolic link
-                                break
+                                # ln -s -f $DATADIR/mustshe/$PREPRO_DIR/$ref/$gender_set/$sl-$suplementl.s $OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/$ref/$gender_set/${src}-$PIVOT-${tgt}.real.pivotin.s # symbolic link
+                                ln -s -f $DATADIR/mustshe/$PREPRO_DIR/correct_ref/$gender_set/$sl-$suplementl.s $OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/$ref/$gender_set/${src}-$PIVOT-${tgt}.real.pivotin.s # symbolic link
                             fi
                         done
                     else
-                        ln -s -f $DATADIR/mustshe/$PREPRO_DIR/$ref/$gender_set/$sl-$tl.s $OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/$ref/$gender_set/${src}-$PIVOT-${tgt}.real.pivotin.s # symbolic link
+                        # ln -s -f $DATADIR/mustshe/$PREPRO_DIR/$ref/$gender_set/$sl-$tl.s $OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/$ref/$gender_set/${src}-$PIVOT-${tgt}.real.pivotin.s # symbolic link
+                        ln -s -f $DATADIR/mustshe/$PREPRO_DIR/correct_ref/$gender_set/$sl-$tl.s $OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/$ref/$gender_set/${src}-$PIVOT-${tgt}.real.pivotin.s # symbolic link
                     fi
                     
                     pred_src=$OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot/$ref/$gender_set/${src}-$PIVOT-${tgt}.real.pivotin.s
