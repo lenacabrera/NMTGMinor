@@ -62,3 +62,81 @@ fi
 
 echo "** Create multi-way MuST-C corpus"
 $SCRIPTDIR/mustc/utils/create.multiway.corpus.mustc.sh
+
+echo "** Create twowayES MuST-C corpus"
+mkdir -p $DATADIR/mustc/raw/twowayES
+mkdir -p $DATADIR/mustc/raw/twowayES/train
+mkdir -p $DATADIR/mustc/raw/twowayES/valid
+mkdir -p $DATADIR/mustc/raw/twowayES/tst-COMMON
+mkdir -p $DATADIR/mustc/raw/twowayES/tst-HE
+
+
+for set_dir in train valid tst-COMMON tst-HE; do
+    python3 -u $NMTDIR/utils/extract_es_par_data.py \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-es.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-es.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-cs.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-cs.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-de.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-de.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-fr.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-fr.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-it.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-it.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-nl.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-nl.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-pt.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-pt.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-ro.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-ro.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-ru.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-ru.t \
+            $DATADIR/mustc/raw/twowayES/$set_dir/
+    
+        cp -f $DATADIR/mustc/raw/twoway/$set_dir/en-es.s $DATADIR/mustc/raw/twowayES/$set_dir/en-es.s
+    for f in $DATADIR/mustc/raw/twowayES/$set_dir/*\.s; do
+        lan="$(basename "$f")"
+        tl=${lan:0:2}
+        sl=${lan:3:2}
+        cp -f $f $DATADIR/mustc/raw/twowayES/$set_dir/$sl-$tl.t
+    done
+done
+
+echo "** Create twowayDE MuST-C corpus"
+mkdir -p $DATADIR/mustc/raw/twowayDE
+mkdir -p $DATADIR/mustc/raw/twowayDE/train
+mkdir -p $DATADIR/mustc/raw/twowayDE/valid
+mkdir -p $DATADIR/mustc/raw/twowayDE/tst-COMMON
+mkdir -p $DATADIR/mustc/raw/twowayDE/tst-HE
+
+
+for set_dir in train valid tst-COMMON tst-HE; do
+    python3 -u $NMTDIR/utils/extract_de_par_data.py \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-de.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-de.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-cs.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-cs.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-es.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-es.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-fr.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-fr.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-it.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-it.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-nl.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-nl.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-pt.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-pt.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-ro.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-ro.t \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-ru.s \
+            $DATADIR/mustc/raw/twoway/$set_dir/en-ru.t \
+            $DATADIR/mustc/raw/twowayDE/$set_dir/
+    
+        cp -f $DATADIR/mustc/raw/twoway/$set_dir/en-de.s $DATADIR/mustc/raw/twowayDE/$set_dir/en-de.s
+    for f in $DATADIR/mustc/raw/twowayDE/$set_dir/*\.s; do
+        lan="$(basename "$f")"
+        tl=${lan:0:2}
+        sl=${lan:3:2}
+        cp -f $f $DATADIR/mustc/raw/twowayDE/$set_dir/$sl-$tl.t
+    done
+done
