@@ -4,10 +4,14 @@ import sys
 import os
 import argparse
 import re
+import random
+import json
+
+random.seed(0)
 
 parser = argparse.ArgumentParser(description='create_separate_gender_files_mustshe.py')
 parser.add_argument('-raw_path', required=True, default=None)
-
+parser.add_argument('-json_path', required=True, default=None)
 
 def main():
 
@@ -56,6 +60,7 @@ def main():
 def main_equal_f_m_instances():
     opt = parser.parse_args()
     raw_path = opt.raw_path
+    jason_path = opt.json_path
 
     for ref in ["correct_ref", "wrong_ref"]:
         for f in os.listdir(f"{raw_path}/{ref}"):
@@ -111,59 +116,161 @@ def main_equal_f_m_instances():
                     "gtm": []
                 }
 
+                all = {
+                    "src": [],
+                    "tgt": [],
+                    "ctg": [],
+                    "spk": [],
+                    "gtm": []
+                }
+
                 for src, tgt, ctg, spk, gtm in zip(src_in, tgt_in, category_in, speaker_in, gterms_in):
                     gender_word_forms = ctg[1]
                     if gender_word_forms == "F":
-                        f["src"].append(src)
-                        f["tgt"].append(tgt)
-                        f["ctg"].append(ctg)
-                        f["spk"].append(spk)
-                        f["gtm"].append(gtm)
+                        if "1" in ctg or "2" in ctg:  # disregard cat. 3 and 4
+                            if "She\n" == spk or "He\n" == spk: # disregard Mixes
+                                f["src"].append(src)
+                                f["tgt"].append(tgt)
+                                f["ctg"].append(ctg)
+                                f["spk"].append(spk)
+                                f["gtm"].append(gtm)
+
                     if gender_word_forms == "M":
-                        m["src"].append(src)
-                        m["tgt"].append(tgt)
-                        m["ctg"].append(ctg)
-                        m["spk"].append(spk)
-                        m["gtm"].append(gtm)
+                        if "1" in ctg or "2" in ctg:  # disregard cat. 3 and 4
+                            if "She\n" == spk or "He\n" == spk: # disregard Mixes
+                                m["src"].append(src)
+                                m["tgt"].append(tgt)
+                                m["ctg"].append(ctg)
+                                m["spk"].append(spk)
+                                m["gtm"].append(gtm)
 
                 equal_num_instances = min(len(f["src"]), len(m["src"]))
-                n = equal_num_instances
-                for src, tgt, ctg, spk, gtm in zip(f["src"][:n], f["tgt"][:n], f["ctg"][:n], f["spk"][:n], f["gtm"][:n]):
-                    f_src_out.write(src)
-                    f_tgt_out.write(tgt)
-                    f_category_out.write(ctg)
-                    f_speaker_out.write(spk)
-                    f_gterms_out.write(gtm)
+                unbalance_factor = 0.05
+                n_f = 0
+                n_m = 0
+                if len(f["src"]) > len(m["src"]):
+                    n_f = int(equal_num_instances * (1 + unbalance_factor))
+                    n_m = equal_num_instances
+                elif len(f["src"]) < len(m["src"]):
+                    n_f = equal_num_instances
+                    n_m = int(equal_num_instances * (1 + unbalance_factor))
+                else:
+                    n_f = equal_num_instances
+                    n_m = equal_num_instances 
 
-                for src, tgt, ctg, spk, gtm in zip(m["src"][:n], m["tgt"][:n], m["ctg"][:n], m["spk"][:n], m["gtm"][:n]):
-                    m_src_out.write(src)
-                    m_tgt_out.write(tgt)
-                    m_category_out.write(ctg)
-                    m_speaker_out.write(spk)
-                    m_gterms_out.write(gtm)
+                f_indices = list(range(len(f["src"])))
+                # random.shuffle(f_indices)
+                f_indices = f_indices[:n_f]
 
-                all = {
-                    "src": f["src"][:n] + m["src"][:n],
-                    "tgt": f["tgt"][:n] + m["tgt"][:n],
-                    "ctg": f["ctg"][:n] + m["ctg"][:n],
-                    "spk": f["spk"][:n] + m["spk"][:n],
-                    "gtm": f["gtm"][:n] + m["gtm"][:n]
+                m_indices = list(range(len(m["src"])))
+                # random.shuffle(m_indices)
+                m_indices = m_indices[:n_m]
+
+                # dataset statistics
+                stats = {
+
+                    "n_feminine": 0,
+                    "n_feminine_female": 0,
+                    "n_feminine_male": 0,
+                    "n_feminine_1": 0,
+                    "n_feminine_1_female": 0,
+                    # "n_feminine_1_male": 0,
+                    "n_feminine_2": 0,
+                    "n_feminine_2_female": 0,
+                    "n_feminine_2_male": 0,
+
+                    "n_masculine": 0,
+                    "n_masculine_female": 0,
+                    "n_masculine_male": 0,
+                    "n_masculine_1": 0,
+                    # "n_masculine_1_female": 0,
+                    "n_masculine_1_male": 0,
+                    "n_masculine_2": 0,
+                    "n_masculine_2_female": 0,
+                    "n_masculine_2_male": 0,
+                
+                    "n_1": 0,
+                    "n_2": 0
                 }
-                print(len(all["src"]))
-                print(len(all["tgt"]))
-                print(len(all["ctg"]))
-                print(len(all["spk"]))
-                print(len(all["gtm"]))
-                print()
-                i = 0
+
+                for i in f_indices:
+                    f_src_out.write(f["src"][i])
+                    f_tgt_out.write(f["tgt"][i])
+                    f_category_out.write(f["ctg"][i])
+                    f_speaker_out.write(f["spk"][i])
+                    f_gterms_out.write(f["gtm"][i])
+
+                    all["src"].append(f["src"][i])
+                    all["tgt"].append(f["tgt"][i])
+                    all["ctg"].append(f["ctg"][i])
+                    all["spk"].append(f["spk"][i])
+                    all["gtm"].append(f["gtm"][i])
+
+                    if "1" in f["ctg"][i]:
+                        if "She\n" == f["spk"][i]:
+                            stats["n_feminine_1_female"] += 1
+                            stats["n_feminine_female"] += 1
+                        else:
+                            stats["n_feminine_1_male"] += 1
+                            stats["n_feminine_male"] += 1
+                        stats["n_feminine_1"] += 1
+                        stats["n_1"] += 1
+                    else:
+                        if "She\n" == f["spk"][i]:
+                            stats["n_feminine_2_female"] += 1
+                            stats["n_feminine_female"] += 1
+                        else:
+                            stats["n_feminine_2_male"] += 1
+                            stats["n_feminine_male"] += 1
+                        stats["n_feminine_2"] += 1
+                        stats["n_2"] += 1
+
+                    stats["n_feminine"] += 1
+
+                for i in m_indices:
+                    m_src_out.write(m["src"][i])
+                    m_tgt_out.write(m["tgt"][i])
+                    m_category_out.write(m["ctg"][i])
+                    m_speaker_out.write(m["spk"][i])
+                    m_gterms_out.write(m["gtm"][i])
+
+                    all["src"].append(m["src"][i])
+                    all["tgt"].append(m["tgt"][i])
+                    all["ctg"].append(m["ctg"][i])
+                    all["spk"].append(m["spk"][i])
+                    all["gtm"].append(m["gtm"][i])
+
+                    if "1" in m["ctg"][i]:
+                        if "She\n" == m["spk"][i]:
+                            stats["n_masculine_1_female"] += 1
+                            stats["n_masculine_female"] += 1
+                        else:
+                            stats["n_masculine_1_male"] += 1
+                            stats["n_masculine_male"] += 1
+                        stats["n_masculine_1"] += 1
+                        stats["n_1"] += 1
+                    else:
+                        if "She\n" == m["spk"][i]:
+                            stats["n_masculine_2_female"] += 1
+                            stats["n_masculine_female"] += 1
+                        else:
+                            stats["n_masculine_2_male"] += 1
+                            stats["n_masculine_male"] += 1
+                        stats["n_masculine_2"] += 1
+                        stats["n_2"] += 1
+
+                    stats["n_masculine"] += 1
+
+                # export dataset stats
+                with open(f"{jason_path}/mustshe_stats.json", 'w') as file:
+                    file.write(json.dumps(stats, indent=3))
+
                 for src, tgt, ctg, spk, gtm in zip(all["src"], all["tgt"], all["ctg"], all["spk"], all["gtm"]):
                     all_src_out.write(src)
                     all_tgt_out.write(tgt)
                     all_category_out.write(ctg)
                     all_speaker_out.write(spk)
                     all_gterms_out.write(gtm)
-                    i += 1
-                # print(i)
 
 
 if __name__ == '__main__':

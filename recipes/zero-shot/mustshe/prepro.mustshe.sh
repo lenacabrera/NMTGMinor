@@ -5,6 +5,9 @@ export PREPRO_TYPE=${BPESIZE}
 export SENTENCE_PIECE=false
 export REMOVE_OVERLAP_W_MUSTC=true
 
+TRAIN_SET=multiway
+# TRAIN_SET=twoway
+
 if [ $SENTENCE_PIECE = true ]; then
         PREPRO_TYPE=${PREPRO_TYPE}_sentencepiece
 else
@@ -37,8 +40,8 @@ for ref in correct_ref wrong_ref; do
                                         src_file=$DATADIR/mustshe/raw/$ref/$gender_set/$set.s
                                         cat $src_file | \
                                                 perl $MOSESDIR/scripts/tokenizer/tokenizer.perl -l ${sl} | \
-                                                $MOSESDIR/scripts/recaser/truecase.perl --model $WORKDIR/model/$PREPRO_DIR/mustc/multiway/truecase-model.s | \
-                                                $BPEDIR/subword_nmt/apply_bpe.py -c $WORKDIR/model/$PREPRO_DIR/mustc/multiway/codec --vocabulary $WORKDIR/model/$PREPRO_DIR/mustc/multiway/voc.s --vocabulary-threshold 50 \
+                                                $MOSESDIR/scripts/recaser/truecase.perl --model $WORKDIR/model/$PREPRO_DIR/mustc/$TRAIN_SET/truecase-model.s | \
+                                                $BPEDIR/subword_nmt/apply_bpe.py -c $WORKDIR/model/$PREPRO_DIR/mustc/$TRAIN_SET/codec --vocabulary $WORKDIR/model/$PREPRO_DIR/mustc/$TRAIN_SET/voc.s --vocabulary-threshold 50 \
                                                         > $tok_file
                                 fi
                         done

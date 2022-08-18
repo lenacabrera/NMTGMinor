@@ -55,7 +55,8 @@ mkdir -p $DATADIR/mustshe/raw/wrong_ref/feminine/annotation
 mkdir -p $DATADIR/mustshe/raw/wrong_ref/masculine/annotation
 
 python3 -u $NMTDIR/utils/create_separate_gender_files_mustshe.py \
-    	-raw_path $DATADIR/mustshe/raw 
+    	-raw_path $DATADIR/mustshe/raw \
+        -json_path $NMTDIR/../output/
 
 # for ref in correct_ref wrong_ref; do
 #     for f in $DATADIR/mustshe/raw/$ref/*\.s; do
