@@ -6,20 +6,27 @@ TEST_SET=mustc
 TRAIN_SET=multiwayDE
 
 out_path=$NMTDIR/../output/results_auto
+out_path_pkl=$NMTDIR/../output/results_auto/pkl
+out_path_json=$NMTDIR/../output/results_auto/json
+out_path_csv=$NMTDIR/../output/results_auto/csv
+
 mkdir -p $out_path
+mkdir -p $out_path_pkl
+mkdir -p $out_path_json
+mkdir -p $out_path_csv
 
 
 python3 -u $NMTDIR/utils/create_results_data_frames.py \
-        -in_path $out_path/skeleton \
-        -out_path $out_path
+        -in_path $out_path/xlsx \
+        -out_path $out_path_pkl
 
-rm $out_path/summary_bleu.csv
-rm $out_path/summary_acc.csv
-rm $out_path/summary_acc_cat.csv
-rm $out_path/summary_acc_speaker.csv
+rm -f $out_path/summary_bleu.csv
+rm -f $out_path/summary_acc.csv
+rm -f $out_path/summary_acc_cat.csv
+rm -f $out_path/summary_acc_speaker.csv
 
 # train_sets="multiwayESFRIT.r32.q.new"
-train_sets="twoway.r32.q twoway.r32.q.new multiwayES multiwayES.r32.q multiwayDE multiwayDE.r32.q multiwayESFRIT multiwayESFRIT.r32.q.new multiwayES.SIM multiwayES.r32.q.SIM multiwayES.ADV multiwayES.ADV.r32.q" # multiwayES.ADV.en" # multiwayES.ADV.en.r32.q"
+train_sets="twoway.r32.q twoway.r32.q.new multiwayES multiwayES.r32.q multiwayDE multiwayDE.r32.q multiwayESFRIT multiwayESFRIT.r32.q.new multiwayES.SIM multiwayES.r32.q.SIM multiwayES.ADV multiwayES.ADV.r32.q twoway.r32.q.SIM twoway.new.SIM.r32.q twoway.r32.q.ADV twoway.r32.q.new.ADV"
 
 # mustshe
 for train_set in $train_sets; do
@@ -28,6 +35,9 @@ for train_set in $train_sets; do
             -raw_path $DATADIR/mustshe/raw \
             -pred_path $OUTDIR/$MODEL/mustshe/$train_set \
             -train_set $train_set \
+            -df_path $out_path_pkl \
+            -out_path_json $out_path_json \
+            -out_path_csv $out_path_csv \
             -out_path $out_path
 done
 

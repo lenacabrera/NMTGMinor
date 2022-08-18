@@ -8,12 +8,17 @@ import pandas as pd
 import pickle
 import os
 
+np.seterr('raise')
+
 parser = argparse.ArgumentParser(description='prep_results.py')
 
 parser.add_argument('-raw_path', required=True, default=None)
 parser.add_argument('-pred_path', required=True, default=None)
 parser.add_argument('-train_set', required=True, default=None)
 parser.add_argument('-out_path', required=True, default=None)
+parser.add_argument('-out_path_csv', required=True, default=None)
+parser.add_argument('-out_path_json', required=True, default=None)
+parser.add_argument('-df_path', required=True, default=None)
 
 
 def get_bleu_scores_mustshe(lines):
@@ -46,6 +51,10 @@ def get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl):
     accuracies_2 = []
     accuracies_f_speaker = []
     accuracies_m_speaker = []
+    accuracies_f_speaker_1 = []
+    accuracies_f_speaker_2 = []
+    accuracies_m_speaker_1 = []
+    accuracies_m_speaker_2 = []
     i = 0
     for src, pred, gterms, speaker, category in zip(src_file, pred_file, gterms_file, speaker_file, category_file):
         pred_gterms = []
@@ -117,6 +126,15 @@ def get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl):
         if "2" in category.replace("\n", ""):
             accuracies_2.append(acc)
 
+        if speaker.replace("\n", "").lower() == "she" and "1" in category.replace("\n", ""):
+            accuracies_f_speaker_1.append(acc)
+        if speaker.replace("\n", "").lower() == "she" and "2" in category.replace("\n", ""):
+            accuracies_f_speaker_2.append(acc)
+        if speaker.replace("\n", "").lower() == "he" and "1" in category.replace("\n", ""):
+            accuracies_m_speaker_1.append(acc)
+        if speaker.replace("\n", "").lower() == "he" and "2" in category.replace("\n", ""):
+            accuracies_m_speaker_2.append(acc)
+
         # if len(pred_gterms) > 0:
         # print("src sentence: ", src.split("\n")[0])
         # print("pred sentence: ", pred.split("\n")[0])
@@ -126,18 +144,73 @@ def get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl):
         # print()
         # if acc > 1:
         #     print('Invalid value: accuracy greater than 1')
-            
-    return accuracies_total, accuracies_1, accuracies_2, accuracies_f_speaker, accuracies_m_speaker
 
-def get_avg_accuracies(accuracies_total, accuracies_1, accuracies_2, accuracies_f_speaker, accuracies_m_speaker):
-    avg_acc_total = round(np.average(np.array(accuracies_total)) * 100, 1)
-    avg_acc_f_speaker = round(np.average(np.array(accuracies_f_speaker)) * 100, 1)
-    avg_acc_m_speaker = round(np.average(np.array(accuracies_m_speaker)) * 100, 1)
+        if len(accuracies_total) == 0:
+            accuracies_total.append(0)
+        if len(accuracies_1) == 0:
+            accuracies_1.append(0)
+        if len(accuracies_2) == 0:
+            accuracies_2.append(0)
+        if len(accuracies_f_speaker) == 0:
+            accuracies_f_speaker.append(0)
+        if len(accuracies_m_speaker) == 0:
+            accuracies_m_speaker.append(0)
+        if len(accuracies_f_speaker_1) == 0:
+            accuracies_f_speaker_1.append(0)
+        if len(accuracies_f_speaker_2) == 0:
+            accuracies_f_speaker_2.append(0)
+        if len(accuracies_m_speaker_1) == 0:
+            accuracies_m_speaker_1.append(0)
+        if len(accuracies_m_speaker_2) == 0:
+            accuracies_m_speaker_2.append(0)
+        
+    return accuracies_total, accuracies_1, accuracies_2, accuracies_f_speaker, accuracies_m_speaker, \
+        accuracies_f_speaker_1, accuracies_f_speaker_2, accuracies_m_speaker_1, accuracies_m_speaker_2
 
-    avg_acc_1 = round(np.average(np.array(accuracies_1)) * 100, 1)
-    avg_acc_2 = round(np.average(np.array(accuracies_2)) * 100, 1)
+def get_avg_accuracies(accuracies_total, accuracies_1, accuracies_2, accuracies_f_speaker, accuracies_m_speaker, \
+    accuracies_f_speaker_1, accuracies_f_speaker_2, accuracies_m_speaker_1, accuracies_m_speaker_2):
+    if len(accuracies_total) > 0:
+        avg_acc_total = round(np.average(np.array(accuracies_total)) * 100, 1)
+    else:
+        avg_acc_total = 0
+    
+    if len(accuracies_f_speaker) > 0:
+        avg_acc_f_speaker = round(np.average(np.array(accuracies_f_speaker)) * 100, 1)
+    else:
+        avg_acc_f_speaker = 0
+    if len(accuracies_m_speaker) > 0:
+        avg_acc_m_speaker = round(np.average(np.array(accuracies_m_speaker)) * 100, 1)
+    else:
+        avg_acc_m_speaker = 0
 
-    return avg_acc_total, avg_acc_1, avg_acc_2, avg_acc_f_speaker, avg_acc_m_speaker
+    if len(accuracies_1) > 0:
+        avg_acc_1 = round(np.average(np.array(accuracies_1)) * 100, 1)
+    else:
+        avg_acc_1 = 0
+    if len(accuracies_2) > 0:
+        avg_acc_2 = round(np.average(np.array(accuracies_2)) * 100, 1)
+    else:
+        avg_acc_2 = 0
+
+    if len(accuracies_f_speaker_1) > 0:
+        avg_acc_f_speaker_1 = round(np.average(np.array(accuracies_f_speaker_1)) * 100, 1)
+    else:
+        avg_acc_f_speaker_1 = 0
+    if len(accuracies_f_speaker_2) > 0:
+        avg_acc_f_speaker_2 = round(np.average(np.array(accuracies_f_speaker_2)) * 100, 1)
+    else:
+        avg_acc_f_speaker_2 = 0
+    if len(accuracies_m_speaker_1) > 0:
+        avg_acc_m_speaker_1 = round(np.average(np.array(accuracies_m_speaker_1)) * 100, 1)
+    else:
+        avg_acc_m_speaker_1 = 0
+    if len(accuracies_m_speaker_2) > 0:
+        avg_acc_m_speaker_2 = round(np.average(np.array(accuracies_m_speaker_2)) * 100, 1)
+    else:
+        avg_acc_m_speaker_2 = 0
+
+    return avg_acc_total, avg_acc_1, avg_acc_2, avg_acc_f_speaker, avg_acc_m_speaker, \
+        avg_acc_f_speaker_1, avg_acc_f_speaker_2, avg_acc_m_speaker_1, avg_acc_m_speaker_2
 
 def count_num_of_instances():
     # num_all = len(accuracies_f) + len(accuracies_m)
@@ -324,6 +397,102 @@ def get_empty_results_dict():
                     "diff_f_m_of_all_c": {},
                     "tquality_w_gender_performance": {},
                 },
+                "female_speaker_1": {
+                    "all": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "feminine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "masculine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "f_of_all_c": {},
+                    "m_of_all_c": {},
+                    "diff_f_m_of_all_c": {},
+                    "tquality_w_gender_performance": {},
+                },
+                "female_speaker_2": {
+                    "all": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "feminine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "masculine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "f_of_all_c": {},
+                    "m_of_all_c": {},
+                    "diff_f_m_of_all_c": {},
+                    "tquality_w_gender_performance": {},
+                },
+                "male_speaker_1": {
+                    "all": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "feminine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "masculine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "f_of_all_c": {},
+                    "m_of_all_c": {},
+                    "diff_f_m_of_all_c": {},
+                    "tquality_w_gender_performance": {},
+                },
+                "male_speaker_2": {
+                    "all": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "feminine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "masculine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "f_of_all_c": {},
+                    "m_of_all_c": {},
+                    "diff_f_m_of_all_c": {},
+                    "tquality_w_gender_performance": {},
+                },
             },
             "pivot": {
                 "total": {
@@ -446,6 +615,102 @@ def get_empty_results_dict():
                     "diff_f_m_of_all_c": {},
                     "tquality_w_gender_performance": {},
                 },
+                "female_speaker_1": {
+                    "all": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "feminine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "masculine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "f_of_all_c": {},
+                    "m_of_all_c": {},
+                    "diff_f_m_of_all_c": {},
+                    "tquality_w_gender_performance": {},
+                },
+                "female_speaker_2": {
+                    "all": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "feminine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "masculine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "f_of_all_c": {},
+                    "m_of_all_c": {},
+                    "diff_f_m_of_all_c": {},
+                    "tquality_w_gender_performance": {},
+                },
+                "male_speaker_1": {
+                    "all": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "feminine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "masculine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "f_of_all_c": {},
+                    "m_of_all_c": {},
+                    "diff_f_m_of_all_c": {},
+                    "tquality_w_gender_performance": {},
+                },
+                "male_speaker_2": {
+                    "all": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "feminine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "masculine": {
+                        "correct_ref": {},
+                        "wrong_ref": {},
+                        "diff_c_w": {},
+                        "sum_c_and_diff_c_w": {}
+                    },
+                    "f_of_all_c": {},
+                    "m_of_all_c": {},
+                    "diff_f_m_of_all_c": {},
+                    "tquality_w_gender_performance": {},
+                },
             }
         }
     }
@@ -472,13 +737,18 @@ def calc_and_store_results_per_lset(results, raw_path, pred_path):
                                 results["BLEU"][translation][gender_set][ref][lset] = float(bleu_zs)
                             elif f.startswith(lset) and f.endswith(".pt"):
                                 # Accuracy
-                                acc_total_zs, acc_1_zs, acc_2_zs, acc_f_zs, acc_m_zs = get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl=None)
-                                avg_acc_total_zs, avg_acc_1_zs, avg_acc_2_zs, avg_acc_f_zs, avg_acc_m_zs = get_avg_accuracies(acc_total_zs, acc_1_zs, acc_2_zs, acc_f_zs, acc_m_zs)
+                                acc_total_zs, acc_1_zs, acc_2_zs, acc_f_zs, acc_m_zs, acc_f1_zs, acc_f2_zs, acc_m1_zs, acc_m2_zs = get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl=None)
+                                avg_acc_total_zs, avg_acc_1_zs, avg_acc_2_zs, avg_acc_f_zs, avg_acc_m_zs, avg_acc_f1_zs, avg_acc_f2_zs, avg_acc_m1_zs, avg_acc_m2_zs = get_avg_accuracies(acc_total_zs, acc_1_zs, acc_2_zs, acc_f_zs, acc_m_zs, acc_f1_zs, acc_f2_zs, acc_m1_zs, acc_m2_zs)
                                 results["accuracy"][translation]["total"][gender_set][ref][lset] = avg_acc_total_zs
                                 results["accuracy"][translation]["1"][gender_set][ref][lset] = avg_acc_1_zs
                                 results["accuracy"][translation]["2"][gender_set][ref][lset] = avg_acc_2_zs
                                 results["accuracy"][translation]["female_speaker"][gender_set][ref][lset] = avg_acc_f_zs
                                 results["accuracy"][translation]["male_speaker"][gender_set][ref][lset] = avg_acc_m_zs
+
+                                results["accuracy"][translation]["female_speaker_1"][gender_set][ref][lset] = avg_acc_f1_zs
+                                results["accuracy"][translation]["female_speaker_2"][gender_set][ref][lset] = avg_acc_f2_zs
+                                results["accuracy"][translation]["male_speaker_1"][gender_set][ref][lset] = avg_acc_m1_zs
+                                results["accuracy"][translation]["male_speaker_2"][gender_set][ref][lset] = avg_acc_m2_zs
                             else:
                                 continue
                 else:
@@ -491,6 +761,7 @@ def calc_and_store_results_per_lset(results, raw_path, pred_path):
                             tl = lset.split("-")[2]
                             lset = f"{sl}-{tl}"
                             lsets.append(lset)
+                            
                             if sl != pl and tl != pl:
                                 if f.endswith(".res"):
                                     # BLEU
@@ -499,13 +770,18 @@ def calc_and_store_results_per_lset(results, raw_path, pred_path):
                                     results["BLEU"][translation][gender_set][ref][lset] = float(bleu_pv)
                                 elif f.startswith(f"{sl}-{pl}-{tl}") and f.endswith(".pt"):
                                     # Accuracy
-                                    acc_total_pv, acc_1_pv, acc_2_pv, acc_f_pv, acc_m_pv = get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl)
-                                    avg_acc_total_pv, avg_acc_1_pv, avg_acc_2_pv, avg_acc_f_pv, avg_acc_m_pv = get_avg_accuracies(acc_total_pv, acc_1_pv, acc_2_pv, acc_f_pv, acc_m_pv)
+                                    acc_total_pv, acc_1_pv, acc_2_pv, acc_f_pv, acc_m_pv, acc_f1_pv, acc_f2_pv, acc_m1_pv, acc_m2_pv = get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl)
+                                    avg_acc_total_pv, avg_acc_1_pv, avg_acc_2_pv, avg_acc_f_pv, avg_acc_m_pv, avg_acc_f1_pv, avg_acc_f2_pv, avg_acc_m1_pv, avg_acc_m2_pv = get_avg_accuracies(acc_total_pv, acc_1_pv, acc_2_pv, acc_f_pv, acc_m_pv, acc_f1_pv, acc_f2_pv, acc_m1_pv, acc_m2_pv)
                                     results["accuracy"][translation]["total"][gender_set][ref][lset] = avg_acc_total_pv
                                     results["accuracy"][translation]["1"][gender_set][ref][lset] = avg_acc_1_pv
                                     results["accuracy"][translation]["2"][gender_set][ref][lset] = avg_acc_2_pv
                                     results["accuracy"][translation]["female_speaker"][gender_set][ref][lset] = avg_acc_f_pv
                                     results["accuracy"][translation]["male_speaker"][gender_set][ref][lset] = avg_acc_m_pv
+
+                                    results["accuracy"][translation]["female_speaker_1"][gender_set][ref][lset] = avg_acc_f1_pv
+                                    results["accuracy"][translation]["female_speaker_2"][gender_set][ref][lset] = avg_acc_f2_pv
+                                    results["accuracy"][translation]["male_speaker_1"][gender_set][ref][lset] = avg_acc_m1_pv
+                                    results["accuracy"][translation]["male_speaker_2"][gender_set][ref][lset] = avg_acc_m2_pv
                                 else:
                                     continue   
                             else:
@@ -541,6 +817,20 @@ def calc_and_store_results_per_lset(results, raw_path, pred_path):
                 results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, lset, acc_type="male_speaker")
                 results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, lset, acc_type="male_speaker")
 
+                ## I5. Accuracy (cat + speaker)
+                # -> cat 1 + female
+                results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, lset, acc_type="female_speaker_1")
+                results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, lset, acc_type="female_speaker_1")
+                # -> cat 2 + female
+                results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, lset, acc_type="female_speaker_2")
+                results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, lset, acc_type="female_speaker_2")
+                # -> cat 1 + male
+                results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, lset, acc_type="male_speaker_1")
+                results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, lset, acc_type="male_speaker_1")
+                # -> cat 2 + male
+                results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, lset, acc_type="male_speaker_2")
+                results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, lset, acc_type="male_speaker_2")
+
         # additional metrics (II)
         for lset in lsets:
             ## II2. BLEU
@@ -573,6 +863,24 @@ def calc_and_store_results_per_lset(results, raw_path, pred_path):
             results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, lset, acc_type="male_speaker")
             results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, lset, acc_type="male_speaker")
 
+            ## II5. Accuracy (cat + speaker)
+            # -> cat 1 + female
+            results = calc_3__f_m_of_all_c(results, "accuracy", translation, lset, acc_type="female_speaker_1")
+            results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, lset, acc_type="female_speaker_1")
+            results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, lset, acc_type="female_speaker_1")
+            # -> cat 2 + female
+            results = calc_3__f_m_of_all_c(results, "accuracy", translation, lset, acc_type="female_speaker_2")
+            results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, lset, acc_type="female_speaker_2")
+            results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, lset, acc_type="female_speaker_2")
+            # -> cat 1 + male
+            results = calc_3__f_m_of_all_c(results, "accuracy", translation, lset, acc_type="male_speaker_1")
+            results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, lset, acc_type="male_speaker_1")
+            results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, lset, acc_type="male_speaker_1")
+            # -> cat 2 + male
+            results = calc_3__f_m_of_all_c(results, "accuracy", translation, lset, acc_type="male_speaker_2")
+            results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, lset, acc_type="male_speaker_2")
+            results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, lset, acc_type="male_speaker_2")
+
     return results
 
 def calc_and_store_results_avg_zeroshot_directions(results, raw_path, pred_path):
@@ -604,12 +912,22 @@ def calc_and_store_results_avg_zeroshot_directions(results, raw_path, pred_path)
                                         results["accuracy"][translation]["2"][gender_set][ref]["zs_avg"] = []
                                         results["accuracy"][translation]["female_speaker"][gender_set][ref]["zs_avg"] = []
                                         results["accuracy"][translation]["male_speaker"][gender_set][ref]["zs_avg"] = []
-                                    acc_total_zs, acc_1_zs, acc_2_zs, acc_f_zs, acc_m_zs = get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl=None)
+
+                                        results["accuracy"][translation]["female_speaker_1"][gender_set][ref]["zs_avg"] = []
+                                        results["accuracy"][translation]["female_speaker_2"][gender_set][ref]["zs_avg"] = []
+                                        results["accuracy"][translation]["male_speaker_1"][gender_set][ref]["zs_avg"] = []
+                                        results["accuracy"][translation]["male_speaker_2"][gender_set][ref]["zs_avg"] = []
+                                    acc_total_zs, acc_1_zs, acc_2_zs, acc_f_zs, acc_m_zs, acc_f1_zs, acc_f2_zs, acc_m1_zs, acc_m2_zs = get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl=None)
                                     results["accuracy"][translation]["total"][gender_set][ref]["zs_avg"].append(acc_total_zs)
                                     results["accuracy"][translation]["1"][gender_set][ref]["zs_avg"].append(acc_1_zs)
                                     results["accuracy"][translation]["2"][gender_set][ref]["zs_avg"].append(acc_2_zs)
                                     results["accuracy"][translation]["female_speaker"][gender_set][ref]["zs_avg"].append(acc_f_zs)
                                     results["accuracy"][translation]["male_speaker"][gender_set][ref]["zs_avg"].append(acc_m_zs)
+
+                                    results["accuracy"][translation]["female_speaker_1"][gender_set][ref]["zs_avg"].append(acc_f1_zs)
+                                    results["accuracy"][translation]["female_speaker_2"][gender_set][ref]["zs_avg"].append(acc_f2_zs)
+                                    results["accuracy"][translation]["male_speaker_1"][gender_set][ref]["zs_avg"].append(acc_m1_zs)
+                                    results["accuracy"][translation]["male_speaker_2"][gender_set][ref]["zs_avg"].append(acc_m2_zs)
                                 else:
                                     continue
                             else:
@@ -642,12 +960,22 @@ def calc_and_store_results_avg_zeroshot_directions(results, raw_path, pred_path)
                                             results["accuracy"][translation]["2"][gender_set][ref]["zs_avg"] = []
                                             results["accuracy"][translation]["female_speaker"][gender_set][ref]["zs_avg"] = []
                                             results["accuracy"][translation]["male_speaker"][gender_set][ref]["zs_avg"] = []
-                                        acc_total_pv, acc_1_pv, acc_2_pv, acc_f_pv, acc_m_pv = get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl)
+
+                                            results["accuracy"][translation]["female_speaker_1"][gender_set][ref]["zs_avg"] = []
+                                            results["accuracy"][translation]["female_speaker_2"][gender_set][ref]["zs_avg"] = []
+                                            results["accuracy"][translation]["male_speaker_1"][gender_set][ref]["zs_avg"] = []
+                                            results["accuracy"][translation]["male_speaker_2"][gender_set][ref]["zs_avg"] = []
+                                        acc_total_pv, acc_1_pv, acc_2_pv, acc_f_pv, acc_m_pv, acc_f1_pv, acc_f2_pv, acc_m1_pv, acc_m2_pv = get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl)
                                         results["accuracy"][translation]["total"][gender_set][ref]["zs_avg"].append(acc_total_pv)
                                         results["accuracy"][translation]["1"][gender_set][ref]["zs_avg"].append(acc_1_pv)
                                         results["accuracy"][translation]["2"][gender_set][ref]["zs_avg"].append(acc_2_pv)
                                         results["accuracy"][translation]["female_speaker"][gender_set][ref]["zs_avg"].append(acc_f_pv)
                                         results["accuracy"][translation]["male_speaker"][gender_set][ref]["zs_avg"].append(acc_m_pv)
+
+                                        results["accuracy"][translation]["female_speaker_1"][gender_set][ref]["zs_avg"].append(acc_f1_pv)
+                                        results["accuracy"][translation]["female_speaker_2"][gender_set][ref]["zs_avg"].append(acc_f2_pv)
+                                        results["accuracy"][translation]["male_speaker_1"][gender_set][ref]["zs_avg"].append(acc_m1_pv)
+                                        results["accuracy"][translation]["male_speaker_2"][gender_set][ref]["zs_avg"].append(acc_m2_pv)
                                     else:
                                         continue   
                                 else:
@@ -666,12 +994,22 @@ def calc_and_store_results_avg_zeroshot_directions(results, raw_path, pred_path)
                 acc_fspeaker_avg = np.round(np.average(results["accuracy"][translation]["female_speaker"][gender_set][ref]["zs_avg"]) * 100, 1)
                 acc_mspeaker_avg = np.round(np.average(results["accuracy"][translation]["male_speaker"][gender_set][ref]["zs_avg"]) * 100, 1)
 
+                acc_fspeaker_1_avg = np.round(np.average(results["accuracy"][translation]["female_speaker_1"][gender_set][ref]["zs_avg"]) * 100, 1)
+                acc_fspeaker_2_avg = np.round(np.average(results["accuracy"][translation]["female_speaker_2"][gender_set][ref]["zs_avg"]) * 100, 1)
+                acc_mspeaker_1_avg = np.round(np.average(results["accuracy"][translation]["male_speaker_1"][gender_set][ref]["zs_avg"]) * 100, 1)
+                acc_mspeaker_2_avg = np.round(np.average(results["accuracy"][translation]["male_speaker_2"][gender_set][ref]["zs_avg"]) * 100, 1)
+
                 results["BLEU"][translation][gender_set][ref]["zs_avg"] = bleu_avg
                 results["accuracy"][translation]["total"][gender_set][ref]["zs_avg"] = acc_total_avg
                 results["accuracy"][translation]["1"][gender_set][ref]["zs_avg"] = acc_1_avg
                 results["accuracy"][translation]["2"][gender_set][ref]["zs_avg"] = acc_2_avg
                 results["accuracy"][translation]["female_speaker"][gender_set][ref]["zs_avg"] = acc_fspeaker_avg
                 results["accuracy"][translation]["male_speaker"][gender_set][ref]["zs_avg"] = acc_mspeaker_avg
+
+                results["accuracy"][translation]["female_speaker_1"][gender_set][ref]["zs_avg"] = acc_fspeaker_1_avg
+                results["accuracy"][translation]["female_speaker_2"][gender_set][ref]["zs_avg"] = acc_fspeaker_2_avg
+                results["accuracy"][translation]["male_speaker_1"][gender_set][ref]["zs_avg"] = acc_mspeaker_1_avg
+                results["accuracy"][translation]["male_speaker_2"][gender_set][ref]["zs_avg"] = acc_mspeaker_2_avg
 
             # additional metrics (I)
             ## I1. BLEU
@@ -697,6 +1035,20 @@ def calc_and_store_results_avg_zeroshot_directions(results, raw_path, pred_path)
             # -> male
             results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, "zs_avg", acc_type="male_speaker")
             results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, "zs_avg", acc_type="male_speaker")
+
+            ## I5. Accuracy (cat + speaker)
+            # -> cat 1 + female
+            results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, "zs_avg", acc_type="female_speaker_1")
+            results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, "zs_avg", acc_type="female_speaker_1")
+            # -> cat 2 + female
+            results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, "zs_avg", acc_type="female_speaker_2")
+            results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, "zs_avg", acc_type="female_speaker_2")
+            # -> cat 1 + male
+            results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, "zs_avg", acc_type="male_speaker_1")
+            results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, "zs_avg", acc_type="male_speaker_1")
+            # -> cat 2 + male
+            results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, "zs_avg", acc_type="male_speaker_2")
+            results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, "zs_avg", acc_type="male_speaker_2")
 
 
         # additional metrics (II)
@@ -729,6 +1081,24 @@ def calc_and_store_results_avg_zeroshot_directions(results, raw_path, pred_path)
         results = calc_3__f_m_of_all_c(results, "accuracy", translation, "zs_avg", acc_type="male_speaker")
         results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, "zs_avg", acc_type="male_speaker")
         results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, "zs_avg", acc_type="male_speaker")
+
+        ## II5. Accuracy (cat + speaker)
+        # -> cat 1 + female
+        results = calc_3__f_m_of_all_c(results, "accuracy", translation, "zs_avg", acc_type="female_speaker_1")
+        results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, "zs_avg", acc_type="female_speaker_1")
+        results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, "zs_avg", acc_type="female_speaker_1")
+        # -> cat 2 + female
+        results = calc_3__f_m_of_all_c(results, "accuracy", translation, "zs_avg", acc_type="female_speaker_2")
+        results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, "zs_avg", acc_type="female_speaker_2")
+        results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, "zs_avg", acc_type="female_speaker_2")
+        # -> cat 1 + male
+        results = calc_3__f_m_of_all_c(results, "accuracy", translation, "zs_avg", acc_type="male_speaker_1")
+        results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, "zs_avg", acc_type="male_speaker_1")
+        results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, "zs_avg", acc_type="male_speaker_1")
+        # -> cat 2 + male
+        results = calc_3__f_m_of_all_c(results, "accuracy", translation, "zs_avg", acc_type="male_speaker_2")
+        results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, "zs_avg", acc_type="male_speaker_2")
+        results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, "zs_avg", acc_type="male_speaker_2")
 
     return results
 
@@ -774,12 +1144,22 @@ def calc_and_store_results_avg_supervised_directions(results, raw_path, pred_pat
                                         results["accuracy"][translation]["2"][gender_set][ref]["sv_avg"] = []
                                         results["accuracy"][translation]["female_speaker"][gender_set][ref]["sv_avg"] = []
                                         results["accuracy"][translation]["male_speaker"][gender_set][ref]["sv_avg"] = []
-                                    acc_total_zs, acc_1_zs, acc_2_zs, acc_f_zs, acc_m_zs = get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl=None)
+
+                                        results["accuracy"][translation]["female_speaker_1"][gender_set][ref]["sv_avg"] = []
+                                        results["accuracy"][translation]["female_speaker_2"][gender_set][ref]["sv_avg"] = []
+                                        results["accuracy"][translation]["male_speaker_1"][gender_set][ref]["sv_avg"] = []
+                                        results["accuracy"][translation]["male_speaker_2"][gender_set][ref]["sv_avg"] = []
+                                    acc_total_zs, acc_1_zs, acc_2_zs, acc_f_zs, acc_m_zs, acc_f1_zs, acc_f2_zs, acc_m1_zs, acc_m2_zs = get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl=None)
                                     results["accuracy"][translation]["total"][gender_set][ref]["sv_avg"].append(acc_total_zs)
                                     results["accuracy"][translation]["1"][gender_set][ref]["sv_avg"].append(acc_1_zs)
                                     results["accuracy"][translation]["2"][gender_set][ref]["sv_avg"].append(acc_2_zs)
                                     results["accuracy"][translation]["female_speaker"][gender_set][ref]["sv_avg"].append(acc_f_zs)
                                     results["accuracy"][translation]["male_speaker"][gender_set][ref]["sv_avg"].append(acc_m_zs)
+
+                                    results["accuracy"][translation]["female_speaker_1"][gender_set][ref]["sv_avg"].append(acc_f1_zs)
+                                    results["accuracy"][translation]["female_speaker_2"][gender_set][ref]["sv_avg"].append(acc_f2_zs)
+                                    results["accuracy"][translation]["male_speaker_1"][gender_set][ref]["sv_avg"].append(acc_m1_zs)
+                                    results["accuracy"][translation]["male_speaker_2"][gender_set][ref]["sv_avg"].append(acc_m2_zs)
                                 else:
                                     continue
                             else:
@@ -812,12 +1192,22 @@ def calc_and_store_results_avg_supervised_directions(results, raw_path, pred_pat
                                             results["accuracy"][translation]["2"][gender_set][ref]["sv_avg"] = []
                                             results["accuracy"][translation]["female_speaker"][gender_set][ref]["sv_avg"] = []
                                             results["accuracy"][translation]["male_speaker"][gender_set][ref]["sv_avg"] = []
-                                        acc_total_pv, acc_1_pv, acc_2_pv, acc_f_pv, acc_m_pv = get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl)
+
+                                            results["accuracy"][translation]["female_speaker_1"][gender_set][ref]["sv_avg"] = []
+                                            results["accuracy"][translation]["female_speaker_2"][gender_set][ref]["sv_avg"] = []
+                                            results["accuracy"][translation]["male_speaker_1"][gender_set][ref]["sv_avg"] = []
+                                            results["accuracy"][translation]["male_speaker_2"][gender_set][ref]["sv_avg"] = []
+                                        acc_total_pv, acc_1_pv, acc_2_pv, acc_f_pv, acc_m_pv, acc_f1_pv, acc_f2_pv, acc_m1_pv, acc_m2_pv = get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl)
                                         results["accuracy"][translation]["total"][gender_set][ref]["sv_avg"].append(acc_total_pv)
                                         results["accuracy"][translation]["1"][gender_set][ref]["sv_avg"].append(acc_1_pv)
                                         results["accuracy"][translation]["2"][gender_set][ref]["sv_avg"].append(acc_2_pv)
                                         results["accuracy"][translation]["female_speaker"][gender_set][ref]["sv_avg"].append(acc_f_pv)
                                         results["accuracy"][translation]["male_speaker"][gender_set][ref]["sv_avg"].append(acc_m_pv)
+                                        
+                                        results["accuracy"][translation]["female_speaker_1"][gender_set][ref]["sv_avg"].append(acc_f1_pv)
+                                        results["accuracy"][translation]["female_speaker_2"][gender_set][ref]["sv_avg"].append(acc_f2_pv)
+                                        results["accuracy"][translation]["male_speaker_1"][gender_set][ref]["sv_avg"].append(acc_m1_pv)
+                                        results["accuracy"][translation]["male_speaker_2"][gender_set][ref]["sv_avg"].append(acc_m2_pv)
                                     else:
                                         continue   
                                 else:
@@ -839,11 +1229,21 @@ def calc_and_store_results_avg_supervised_directions(results, raw_path, pred_pat
                     acc_fspeaker_avg = np.round(np.average(results["accuracy"][translation]["female_speaker"][gender_set][ref]["sv_avg"]) * 100, 1)
                     acc_mspeaker_avg = np.round(np.average(results["accuracy"][translation]["male_speaker"][gender_set][ref]["sv_avg"]) * 100, 1)
 
+                    acc_fspeaker_1_avg = np.round(np.average(results["accuracy"][translation]["female_speaker_1"][gender_set][ref]["sv_avg"]) * 100, 1)
+                    acc_fspeaker_2_avg = np.round(np.average(results["accuracy"][translation]["female_speaker_2"][gender_set][ref]["sv_avg"]) * 100, 1)
+                    acc_mspeaker_1_avg = np.round(np.average(results["accuracy"][translation]["male_speaker_1"][gender_set][ref]["sv_avg"]) * 100, 1)
+                    acc_mspeaker_2_avg = np.round(np.average(results["accuracy"][translation]["male_speaker_2"][gender_set][ref]["sv_avg"]) * 100, 1)
+
                     results["accuracy"][translation]["total"][gender_set][ref]["sv_avg"] = acc_total_avg
                     results["accuracy"][translation]["1"][gender_set][ref]["sv_avg"] = acc_1_avg
                     results["accuracy"][translation]["2"][gender_set][ref]["sv_avg"] = acc_2_avg
                     results["accuracy"][translation]["female_speaker"][gender_set][ref]["sv_avg"] = acc_fspeaker_avg
                     results["accuracy"][translation]["male_speaker"][gender_set][ref]["sv_avg"] = acc_mspeaker_avg
+
+                    results["accuracy"][translation]["female_speaker_1"][gender_set][ref]["sv_avg"] = acc_fspeaker_1_avg
+                    results["accuracy"][translation]["female_speaker_2"][gender_set][ref]["sv_avg"] = acc_fspeaker_2_avg
+                    results["accuracy"][translation]["male_speaker_1"][gender_set][ref]["sv_avg"] = acc_mspeaker_1_avg
+                    results["accuracy"][translation]["male_speaker_2"][gender_set][ref]["sv_avg"] = acc_mspeaker_2_avg
 
             # additional metrics (I)
             ## I1. BLEU
@@ -875,6 +1275,24 @@ def calc_and_store_results_avg_supervised_directions(results, raw_path, pred_pat
             if "sv_avg" in results["accuracy"][translation]["male_speaker"][gender_set]["correct_ref"]:
                 results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, "sv_avg", acc_type="male_speaker")
                 results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, "sv_avg", acc_type="male_speaker")
+
+            ## I5. Accuracy (cat + speaker)
+            # -> cat 1 + female 
+            if "sv_avg" in results["accuracy"][translation]["female_speaker"][gender_set]["correct_ref"]:
+                results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, "sv_avg", acc_type="female_speaker_1")
+                results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, "sv_avg", acc_type="female_speaker_1")
+            # -> cat 2 + female 
+            if "sv_avg" in results["accuracy"][translation]["female_speaker"][gender_set]["correct_ref"]:
+                results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, "sv_avg", acc_type="female_speaker_2")
+                results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, "sv_avg", acc_type="female_speaker_2")
+            # -> cat 1 + male
+            if "sv_avg" in results["accuracy"][translation]["male_speaker"][gender_set]["correct_ref"]:
+                results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, "sv_avg", acc_type="male_speaker_1")
+                results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, "sv_avg", acc_type="male_speaker_1")
+            # -> cat 2 + male
+            if "sv_avg" in results["accuracy"][translation]["male_speaker"][gender_set]["correct_ref"]:
+                results = calc_1__diff_c_w(results, "accuracy", translation, gender_set, "sv_avg", acc_type="male_speaker_2")
+                results = calc_2__sum_c_and_diff_c_w(results, "accuracy", translation, gender_set, "sv_avg", acc_type="male_speaker_2")
 
 
         # additional metrics (II)
@@ -913,6 +1331,28 @@ def calc_and_store_results_avg_supervised_directions(results, raw_path, pred_pat
             results = calc_3__f_m_of_all_c(results, "accuracy", translation, "sv_avg", acc_type="male_speaker")
             results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, "sv_avg", acc_type="male_speaker")
             results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, "sv_avg", acc_type="male_speaker")
+
+        ## II4. Accuracy (cat + speaker)
+        # -> cat 1 + female
+        if "sv_avg" in results["accuracy"][translation]["female_speaker"]["all"]["correct_ref"]:
+            results = calc_3__f_m_of_all_c(results, "accuracy", translation, "sv_avg", acc_type="female_speaker_1")
+            results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, "sv_avg", acc_type="female_speaker_1")
+            results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, "sv_avg", acc_type="female_speaker_1")
+        # -> cat 2 + female
+        if "sv_avg" in results["accuracy"][translation]["female_speaker"]["all"]["correct_ref"]:
+            results = calc_3__f_m_of_all_c(results, "accuracy", translation, "sv_avg", acc_type="female_speaker_2")
+            results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, "sv_avg", acc_type="female_speaker_2")
+            results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, "sv_avg", acc_type="female_speaker_2")
+        # -> cat 1 + male
+        if "sv_avg" in results["accuracy"][translation]["male_speaker"]["all"]["correct_ref"]:
+            results = calc_3__f_m_of_all_c(results, "accuracy", translation, "sv_avg", acc_type="male_speaker_1")
+            results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, "sv_avg", acc_type="male_speaker_1")
+            results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, "sv_avg", acc_type="male_speaker_1")
+        # -> cat 2 + male
+        if "sv_avg" in results["accuracy"][translation]["male_speaker"]["all"]["correct_ref"]:
+            results = calc_3__f_m_of_all_c(results, "accuracy", translation, "sv_avg", acc_type="male_speaker_2")
+            results = calc_4__diff_f_m_of_all_c(results, "accuracy", translation, "sv_avg", acc_type="male_speaker_2")
+            results = calc_5__tradeoff_metric_diff(results, "accuracy", translation, "sv_avg", acc_type="male_speaker_2")
 
     return results
 
@@ -1052,7 +1492,7 @@ def export_results(results, metric, df, out_path, map_train_set_model_name, trai
                             df.loc[i, "gatq_pv"] = results[metric]["pivot"]["tquality_w_gender_performance"][f"{sl}-{tl}"]
 
                     if metric == "accuracy":
-                        if i % 2 != 0 and (acc_type == "1" or acc_type == "female_speaker"):
+                        if i % 2 != 0 and (acc_type == "1" or "female_speaker" in acc_type):
                             continue
                         else:
                             # check if sl-tl pair is in results
@@ -1104,6 +1544,10 @@ def export_results(results, metric, df, out_path, map_train_set_model_name, trai
                                 acc_type_2 = "2"
                             if acc_type == "female_speaker":
                                 acc_type_2 = "male_speaker"
+                            if acc_type == "female_speaker_1":
+                                acc_type_2 = "male_speaker_1"
+                            if acc_type == "female_speaker_2":
+                                acc_type_2 = "male_speaker_2"
 
                             if acc_type_2 == None:
                                 continue
@@ -1203,59 +1647,38 @@ def export_results(results, metric, df, out_path, map_train_set_model_name, trai
         }
         df = pd.concat([df, pd.DataFrame.from_dict(d_zs)])
 
-        # average supervised directions
-        if avg_sv and "sv_avg" in results[metric]["zero_shot"]["all"]["correct_ref"]:
-            d_sv = {
-                "sl": "avg. supervised",
-                "model": map_train_set_model_name[train_set],
-                "all_cor_zs": [results[metric]["zero_shot"]["all"]["correct_ref"]["sv_avg"]],
-                "all_wro_zs": [results[metric]["zero_shot"]["all"]["wrong_ref"]["sv_avg"]],
-                "all_diff_zs": [results[metric]["zero_shot"]["all"]["diff_c_w"]["sv_avg"]],
-                "all_sum_diff_zs": [results[metric]["zero_shot"]["all"]["sum_c_and_diff_c_w"]["sv_avg"]],
+        # # average supervised directions
+        # if avg_sv and "sv_avg" in results[metric]["zero_shot"]["all"]["correct_ref"]:
+        #     d_sv = {
+        #         "sl": "avg. supervised",
+        #         "model": map_train_set_model_name[train_set],
+        #         "all_cor_zs": [results[metric]["zero_shot"]["all"]["correct_ref"]["sv_avg"]],
+        #         "all_wro_zs": [results[metric]["zero_shot"]["all"]["wrong_ref"]["sv_avg"]],
+        #         "all_diff_zs": [results[metric]["zero_shot"]["all"]["diff_c_w"]["sv_avg"]],
+        #         "all_sum_diff_zs": [results[metric]["zero_shot"]["all"]["sum_c_and_diff_c_w"]["sv_avg"]],
 
-                "f_cor_zs": [results[metric]["zero_shot"]["feminine"]["correct_ref"]["sv_avg"]],
-                "f_wro_zs": [results[metric]["zero_shot"]["feminine"]["wrong_ref"]["sv_avg"]],
-                "f_diff_zs": [results[metric]["zero_shot"]["feminine"]["diff_c_w"]["sv_avg"]],
-                "f_sum_diff_zs": [results[metric]["zero_shot"]["feminine"]["sum_c_and_diff_c_w"]["sv_avg"]],
+        #         "f_cor_zs": [results[metric]["zero_shot"]["feminine"]["correct_ref"]["sv_avg"]],
+        #         "f_wro_zs": [results[metric]["zero_shot"]["feminine"]["wrong_ref"]["sv_avg"]],
+        #         "f_diff_zs": [results[metric]["zero_shot"]["feminine"]["diff_c_w"]["sv_avg"]],
+        #         "f_sum_diff_zs": [results[metric]["zero_shot"]["feminine"]["sum_c_and_diff_c_w"]["sv_avg"]],
 
-                "m_cor_zs": [results[metric]["zero_shot"]["masculine"]["correct_ref"]["sv_avg"]],
-                "m_wro_zs": [results[metric]["zero_shot"]["masculine"]["wrong_ref"]["sv_avg"]],
-                "m_diff_zs": [results[metric]["zero_shot"]["masculine"]["diff_c_w"]["sv_avg"]],
-                "m_sum_diff_zs": [results[metric]["zero_shot"]["masculine"]["sum_c_and_diff_c_w"]["sv_avg"]],
+        #         "m_cor_zs": [results[metric]["zero_shot"]["masculine"]["correct_ref"]["sv_avg"]],
+        #         "m_wro_zs": [results[metric]["zero_shot"]["masculine"]["wrong_ref"]["sv_avg"]],
+        #         "m_diff_zs": [results[metric]["zero_shot"]["masculine"]["diff_c_w"]["sv_avg"]],
+        #         "m_sum_diff_zs": [results[metric]["zero_shot"]["masculine"]["sum_c_and_diff_c_w"]["sv_avg"]],
 
-                "f_of_cor_zs": [results[metric]["zero_shot"]["f_of_all_c"]["sv_avg"]],
-                "m_of_cor_zs": [results[metric]["zero_shot"]["m_of_all_c"]["sv_avg"]],
-                "diff_f_m_of_cor_zs": [results[metric]["zero_shot"]["diff_f_m_of_all_c"]["sv_avg"]],
-                "gatq_zs": [results[metric]["zero_shot"]["tquality_w_gender_performance"]["sv_avg"]],
-
-                # "all_cor_pv": [results[metric]["pivot"]["all"]["correct_ref"]["sv_avg"]],
-                # "all_wro_pv": [results[metric]["pivot"]["all"]["wrong_ref"]["sv_avg"]],
-                # "all_diff_pv": [results[metric]["pivot"]["all"]["diff_c_w"]["sv_avg"]],
-                # "all_sum_diff_pv": [results[metric]["pivot"]["all"]["sum_c_and_diff_c_w"]["sv_avg"]],
-
-                # "f_cor_pv": [results[metric]["pivot"]["feminine"]["correct_ref"]["sv_avg"]],
-                # "f_wro_pv": [results[metric]["pivot"]["feminine"]["wrong_ref"]["sv_avg"]],
-                # "f_diff_pv": [results[metric]["pivot"]["feminine"]["diff_c_w"]["sv_avg"]],
-                # "f_sum_diff_pv": [results[metric]["pivot"]["feminine"]["sum_c_and_diff_c_w"]["sv_avg"]],
-
-                # "m_cor_pv": [results[metric]["pivot"]["masculine"]["correct_ref"]["sv_avg"]],
-                # "m_wro_pv": [results[metric]["pivot"]["masculine"]["wrong_ref"]["sv_avg"]],
-                # "m_diff_pv": [results[metric]["pivot"]["masculine"]["diff_c_w"]["sv_avg"]],
-                # "m_sum_diff_pv": [results[metric]["pivot"]["masculine"]["sum_c_and_diff_c_w"]["sv_avg"]],
-
-                # "f_of_cor_pv": [results[metric]["pivot"]["f_of_all_c"]["sv_avg"]],
-                # "m_of_cor_pv": [results[metric]["pivot"]["m_of_all_c"]["sv_avg"]],
-                # "diff_f_m_of_cor_pv": [results[metric]["pivot"]["diff_f_m_of_all_c"]["sv_avg"]],
-                # "gatq_pv": [results[metric]["pivot"]["tquality_w_gender_performance"]["sv_avg"]],
-
-            }
-            df = pd.concat([df, pd.DataFrame.from_dict(d_sv)])
+        #         "f_of_cor_zs": [results[metric]["zero_shot"]["f_of_all_c"]["sv_avg"]],
+        #         "m_of_cor_zs": [results[metric]["zero_shot"]["m_of_all_c"]["sv_avg"]],
+        #         "diff_f_m_of_cor_zs": [results[metric]["zero_shot"]["diff_f_m_of_all_c"]["sv_avg"]],
+        #         "gatq_zs": [results[metric]["zero_shot"]["tquality_w_gender_performance"]["sv_avg"]]
+        #     }
+        #     df = pd.concat([df, pd.DataFrame.from_dict(d_sv)])
 
     if metric == "accuracy":
 
         if acc_type == "1":
             category = "cat. 1"
-        elif acc_type == "female_speaker":
+        elif "female_speaker" in acc_type:
             category = "female"
         else:
             category = ""
@@ -1309,164 +1732,160 @@ def export_results(results, metric, df, out_path, map_train_set_model_name, trai
         df = pd.concat([df, pd.DataFrame.from_dict(d_zs)])
 
         ## second metric (category or speaker)
-        if acc_type == "1" or acc_type == "female_speaker":
+        if acc_type == "1" or "female_speaker" in acc_type:
             if acc_type == "1":
-                acc_type2 = "2"
+                acc_type_2 = "2"
                 category = "cat. 2"
-            else:
-                acc_type2 = "male_speaker"
+            elif acc_type == "female_speaker":
+                acc_type_2 = "male_speaker"
                 category = "male"
+            elif acc_type == "female_speaker_1":
+                acc_type_2 = "male_speaker_1"
+                category = "male"
+            elif acc_type == "female_speaker_2":
+                acc_type_2 = "male_speaker_2"
+                category = "male"
+            else:
+                pass
 
             d2_zs = {
                 "sl": "avg. zs",
                 "model": map_train_set_model_name[train_set],
                 "category": category,
-                "all_cor_zs": [results[metric]["zero_shot"][acc_type2]["all"]["correct_ref"]["zs_avg"]],
-                "all_wro_zs": [results[metric]["zero_shot"][acc_type2]["all"]["wrong_ref"]["zs_avg"]],
-                "all_diff_zs": [results[metric]["zero_shot"][acc_type2]["all"]["diff_c_w"]["zs_avg"]],
-                "all_sum_diff_zs": [results[metric]["zero_shot"][acc_type2]["all"]["sum_c_and_diff_c_w"]["zs_avg"]],
+                "all_cor_zs": [results[metric]["zero_shot"][acc_type_2]["all"]["correct_ref"]["zs_avg"]],
+                "all_wro_zs": [results[metric]["zero_shot"][acc_type_2]["all"]["wrong_ref"]["zs_avg"]],
+                "all_diff_zs": [results[metric]["zero_shot"][acc_type_2]["all"]["diff_c_w"]["zs_avg"]],
+                "all_sum_diff_zs": [results[metric]["zero_shot"][acc_type_2]["all"]["sum_c_and_diff_c_w"]["zs_avg"]],
 
-                "f_cor_zs": [results[metric]["zero_shot"][acc_type2]["feminine"]["correct_ref"]["zs_avg"]],
-                "f_wro_zs": [results[metric]["zero_shot"][acc_type2]["feminine"]["wrong_ref"]["zs_avg"]],
-                "f_diff_zs": [results[metric]["zero_shot"][acc_type2]["feminine"]["diff_c_w"]["zs_avg"]],
-                "f_sum_diff_zs": [results[metric]["zero_shot"][acc_type2]["feminine"]["sum_c_and_diff_c_w"]["zs_avg"]],
+                "f_cor_zs": [results[metric]["zero_shot"][acc_type_2]["feminine"]["correct_ref"]["zs_avg"]],
+                "f_wro_zs": [results[metric]["zero_shot"][acc_type_2]["feminine"]["wrong_ref"]["zs_avg"]],
+                "f_diff_zs": [results[metric]["zero_shot"][acc_type_2]["feminine"]["diff_c_w"]["zs_avg"]],
+                "f_sum_diff_zs": [results[metric]["zero_shot"][acc_type_2]["feminine"]["sum_c_and_diff_c_w"]["zs_avg"]],
 
-                "m_cor_zs": [results[metric]["zero_shot"][acc_type2]["masculine"]["correct_ref"]["zs_avg"]],
-                "m_wro_zs": [results[metric]["zero_shot"][acc_type2]["masculine"]["wrong_ref"]["zs_avg"]],
-                "m_diff_zs": [results[metric]["zero_shot"][acc_type2]["masculine"]["diff_c_w"]["zs_avg"]],
-                "m_sum_diff_zs": [results[metric]["zero_shot"][acc_type2]["masculine"]["sum_c_and_diff_c_w"]["zs_avg"]],
+                "m_cor_zs": [results[metric]["zero_shot"][acc_type_2]["masculine"]["correct_ref"]["zs_avg"]],
+                "m_wro_zs": [results[metric]["zero_shot"][acc_type_2]["masculine"]["wrong_ref"]["zs_avg"]],
+                "m_diff_zs": [results[metric]["zero_shot"][acc_type_2]["masculine"]["diff_c_w"]["zs_avg"]],
+                "m_sum_diff_zs": [results[metric]["zero_shot"][acc_type_2]["masculine"]["sum_c_and_diff_c_w"]["zs_avg"]],
 
-                "f_of_cor_zs": [results[metric]["zero_shot"][acc_type2]["f_of_all_c"]["zs_avg"]],
-                "m_of_cor_zs": [results[metric]["zero_shot"][acc_type2]["m_of_all_c"]["zs_avg"]],
-                "diff_f_m_of_cor_zs": [results[metric]["zero_shot"][acc_type2]["diff_f_m_of_all_c"]["zs_avg"]],
-                "gatq_zs": [results[metric]["zero_shot"][acc_type2]["tquality_w_gender_performance"]["zs_avg"]],
+                "f_of_cor_zs": [results[metric]["zero_shot"][acc_type_2]["f_of_all_c"]["zs_avg"]],
+                "m_of_cor_zs": [results[metric]["zero_shot"][acc_type_2]["m_of_all_c"]["zs_avg"]],
+                "diff_f_m_of_cor_zs": [results[metric]["zero_shot"][acc_type_2]["diff_f_m_of_all_c"]["zs_avg"]],
+                "gatq_zs": [results[metric]["zero_shot"][acc_type_2]["tquality_w_gender_performance"]["zs_avg"]],
 
 
-                "all_cor_pv": [results[metric]["pivot"][acc_type2]["all"]["correct_ref"]["zs_avg"]],
-                "all_wro_pv": [results[metric]["pivot"][acc_type2]["all"]["wrong_ref"]["zs_avg"]],
-                "all_diff_pv": [results[metric]["pivot"][acc_type2]["all"]["diff_c_w"]["zs_avg"]],
-                "all_sum_diff_pv": [results[metric]["pivot"][acc_type2]["all"]["sum_c_and_diff_c_w"]["zs_avg"]],
+                "all_cor_pv": [results[metric]["pivot"][acc_type_2]["all"]["correct_ref"]["zs_avg"]],
+                "all_wro_pv": [results[metric]["pivot"][acc_type_2]["all"]["wrong_ref"]["zs_avg"]],
+                "all_diff_pv": [results[metric]["pivot"][acc_type_2]["all"]["diff_c_w"]["zs_avg"]],
+                "all_sum_diff_pv": [results[metric]["pivot"][acc_type_2]["all"]["sum_c_and_diff_c_w"]["zs_avg"]],
 
-                "f_cor_pv": [results[metric]["pivot"][acc_type2]["feminine"]["correct_ref"]["zs_avg"]],
-                "f_wro_pv": [results[metric]["pivot"][acc_type2]["feminine"]["wrong_ref"]["zs_avg"]],
-                "f_diff_pv": [results[metric]["pivot"][acc_type2]["feminine"]["diff_c_w"]["zs_avg"]],
-                "f_sum_diff_pv": [results[metric]["pivot"][acc_type2]["feminine"]["sum_c_and_diff_c_w"]["zs_avg"]],
+                "f_cor_pv": [results[metric]["pivot"][acc_type_2]["feminine"]["correct_ref"]["zs_avg"]],
+                "f_wro_pv": [results[metric]["pivot"][acc_type_2]["feminine"]["wrong_ref"]["zs_avg"]],
+                "f_diff_pv": [results[metric]["pivot"][acc_type_2]["feminine"]["diff_c_w"]["zs_avg"]],
+                "f_sum_diff_pv": [results[metric]["pivot"][acc_type_2]["feminine"]["sum_c_and_diff_c_w"]["zs_avg"]],
 
-                "m_cor_pv": [results[metric]["pivot"][acc_type2]["masculine"]["correct_ref"]["zs_avg"]],
-                "m_wro_pv": [results[metric]["pivot"][acc_type2]["masculine"]["wrong_ref"]["zs_avg"]],
-                "m_diff_pv": [results[metric]["pivot"][acc_type2]["masculine"]["diff_c_w"]["zs_avg"]],
-                "m_sum_diff_pv": [results[metric]["pivot"][acc_type2]["masculine"]["sum_c_and_diff_c_w"]["zs_avg"]],
+                "m_cor_pv": [results[metric]["pivot"][acc_type_2]["masculine"]["correct_ref"]["zs_avg"]],
+                "m_wro_pv": [results[metric]["pivot"][acc_type_2]["masculine"]["wrong_ref"]["zs_avg"]],
+                "m_diff_pv": [results[metric]["pivot"][acc_type_2]["masculine"]["diff_c_w"]["zs_avg"]],
+                "m_sum_diff_pv": [results[metric]["pivot"][acc_type_2]["masculine"]["sum_c_and_diff_c_w"]["zs_avg"]],
 
-                "f_of_cor_pv": [results[metric]["pivot"][acc_type2]["f_of_all_c"]["zs_avg"]],
-                "m_of_cor_pv": [results[metric]["pivot"][acc_type2]["m_of_all_c"]["zs_avg"]],
-                "diff_f_m_of_cor_pv": [results[metric]["pivot"][acc_type2]["diff_f_m_of_all_c"]["zs_avg"]],
-                "gatq_pv": [results[metric]["pivot"][acc_type2]["tquality_w_gender_performance"]["zs_avg"]],
+                "f_of_cor_pv": [results[metric]["pivot"][acc_type_2]["f_of_all_c"]["zs_avg"]],
+                "m_of_cor_pv": [results[metric]["pivot"][acc_type_2]["m_of_all_c"]["zs_avg"]],
+                "diff_f_m_of_cor_pv": [results[metric]["pivot"][acc_type_2]["diff_f_m_of_all_c"]["zs_avg"]],
+                "gatq_pv": [results[metric]["pivot"][acc_type_2]["tquality_w_gender_performance"]["zs_avg"]],
 
             }
             df = pd.concat([df, pd.DataFrame.from_dict(d2_zs)])
 
-        # average supervised directions
-        if avg_sv and "sv_avg" in results[metric]["zero_shot"][acc_type]["all"]["correct_ref"]:
-            d_sv = {
-                "sl": "avg. supervised",
-                "model": map_train_set_model_name[train_set],
-                "category": category,
-                "all_cor_zs": [results[metric]["zero_shot"][acc_type]["all"]["correct_ref"]["sv_avg"]],
-                "all_wro_zs": [results[metric]["zero_shot"][acc_type]["all"]["wrong_ref"]["sv_avg"]],
-                "all_diff_zs": [results[metric]["zero_shot"][acc_type]["all"]["diff_c_w"]["sv_avg"]],
-                "all_sum_diff_zs": [results[metric]["zero_shot"][acc_type]["all"]["sum_c_and_diff_c_w"]["sv_avg"]],
+        # # average supervised directions
+        # if avg_sv and "sv_avg" in results[metric]["zero_shot"][acc_type]["all"]["correct_ref"]:
+        #     d_sv = {
+        #         "sl": "avg. supervised",
+        #         "model": map_train_set_model_name[train_set],
+        #         "category": category,
+        #         "all_cor_zs": [results[metric]["zero_shot"][acc_type]["all"]["correct_ref"]["sv_avg"]],
+        #         "all_wro_zs": [results[metric]["zero_shot"][acc_type]["all"]["wrong_ref"]["sv_avg"]],
+        #         "all_diff_zs": [results[metric]["zero_shot"][acc_type]["all"]["diff_c_w"]["sv_avg"]],
+        #         "all_sum_diff_zs": [results[metric]["zero_shot"][acc_type]["all"]["sum_c_and_diff_c_w"]["sv_avg"]],
 
-                "f_cor_zs": [results[metric]["zero_shot"][acc_type]["feminine"]["correct_ref"]["sv_avg"]],
-                "f_wro_zs": [results[metric]["zero_shot"][acc_type]["feminine"]["wrong_ref"]["sv_avg"]],
-                "f_diff_zs": [results[metric]["zero_shot"][acc_type]["feminine"]["diff_c_w"]["sv_avg"]],
-                "f_sum_diff_zs": [results[metric]["zero_shot"][acc_type]["feminine"]["sum_c_and_diff_c_w"]["sv_avg"]],
+        #         "f_cor_zs": [results[metric]["zero_shot"][acc_type]["feminine"]["correct_ref"]["sv_avg"]],
+        #         "f_wro_zs": [results[metric]["zero_shot"][acc_type]["feminine"]["wrong_ref"]["sv_avg"]],
+        #         "f_diff_zs": [results[metric]["zero_shot"][acc_type]["feminine"]["diff_c_w"]["sv_avg"]],
+        #         "f_sum_diff_zs": [results[metric]["zero_shot"][acc_type]["feminine"]["sum_c_and_diff_c_w"]["sv_avg"]],
 
-                "m_cor_zs": [results[metric]["zero_shot"][acc_type]["masculine"]["correct_ref"]["sv_avg"]],
-                "m_wro_zs": [results[metric]["zero_shot"][acc_type]["masculine"]["wrong_ref"]["sv_avg"]],
-                "m_diff_zs": [results[metric]["zero_shot"][acc_type]["masculine"]["diff_c_w"]["sv_avg"]],
-                "m_sum_diff_zs": [results[metric]["zero_shot"][acc_type]["masculine"]["sum_c_and_diff_c_w"]["sv_avg"]],
+        #         "m_cor_zs": [results[metric]["zero_shot"][acc_type]["masculine"]["correct_ref"]["sv_avg"]],
+        #         "m_wro_zs": [results[metric]["zero_shot"][acc_type]["masculine"]["wrong_ref"]["sv_avg"]],
+        #         "m_diff_zs": [results[metric]["zero_shot"][acc_type]["masculine"]["diff_c_w"]["sv_avg"]],
+        #         "m_sum_diff_zs": [results[metric]["zero_shot"][acc_type]["masculine"]["sum_c_and_diff_c_w"]["sv_avg"]],
 
-                "f_of_cor_zs": [results[metric]["zero_shot"][acc_type]["f_of_all_c"]["sv_avg"]],
-                "m_of_cor_zs": [results[metric]["zero_shot"][acc_type]["m_of_all_c"]["sv_avg"]],
-                "diff_f_m_of_cor_zs": [results[metric]["zero_shot"][acc_type]["diff_f_m_of_all_c"]["sv_avg"]],
-                "gatq_zs": [results[metric]["zero_shot"][acc_type]["tquality_w_gender_performance"]["sv_avg"]],
-
-                # "all_cor_pv": [results[metric]["pivot"][acc_type]["all"]["correct_ref"]["sv_avg"]],
-                # "all_wro_pv": [results[metric]["pivot"][acc_type]["all"]["wrong_ref"]["sv_avg"]],
-                # "all_diff_pv": [results[metric]["pivot"][acc_type]["all"]["diff_c_w"]["sv_avg"]],
-                # "all_sum_diff_pv": [results[metric]["pivot"][acc_type]["all"]["sum_c_and_diff_c_w"]["sv_avg"]],
-
-                # "f_cor_pv": [results[metric]["pivot"][acc_type]["feminine"]["correct_ref"]["sv_avg"]],
-                # "f_wro_pv": [results[metric]["pivot"][acc_type]["feminine"]["wrong_ref"]["sv_avg"]],
-                # "f_diff_pv": [results[metric]["pivot"][acc_type]["feminine"]["diff_c_w"]["sv_avg"]],
-                # "f_sum_diff_pv": [results[metric]["pivot"][acc_type]["feminine"]["sum_c_and_diff_c_w"]["sv_avg"]],
-
-                # "m_cor_pv": [results[metric]["pivot"][acc_type]["masculine"]["correct_ref"]["sv_avg"]],
-                # "m_wro_pv": [results[metric]["pivot"][acc_type]["masculine"]["wrong_ref"]["sv_avg"]],
-                # "m_diff_pv": [results[metric]["pivot"][acc_type]["masculine"]["diff_c_w"]["sv_avg"]],
-                # "m_sum_diff_pv": [results[metric]["pivot"][acc_type]["masculine"]["sum_c_and_diff_c_w"]["sv_avg"]],
-
-                # "f_of_cor_pv": [results[metric]["pivot"][acc_type]["f_of_all_c"]["sv_avg"]],
-                # "m_of_cor_pv": [results[metric]["pivot"][acc_type]["m_of_all_c"]["sv_avg"]],
-                # "diff_f_m_of_cor_pv": [results[metric]["pivot"][acc_type]["diff_f_m_of_all_c"]["sv_avg"]],
-                # "gatq_pv": [results[metric]["pivot"][acc_type]["tquality_w_gender_performance"]["sv_avg"]],
-            }
-            df = pd.concat([df, pd.DataFrame.from_dict(d_sv)])
+        #         "f_of_cor_zs": [results[metric]["zero_shot"][acc_type]["f_of_all_c"]["sv_avg"]],
+        #         "m_of_cor_zs": [results[metric]["zero_shot"][acc_type]["m_of_all_c"]["sv_avg"]],
+        #         "diff_f_m_of_cor_zs": [results[metric]["zero_shot"][acc_type]["diff_f_m_of_all_c"]["sv_avg"]],
+        #         "gatq_zs": [results[metric]["zero_shot"][acc_type]["tquality_w_gender_performance"]["sv_avg"]]
+        #     }
+        #     df = pd.concat([df, pd.DataFrame.from_dict(d_sv)])
 
         ## second metric (category or speaker)
-        if acc_type == "1" or acc_type == "female_speaker":
+        if acc_type == "1" or "female_speaker" in acc_type:
             if acc_type == "1":
-                acc_type2 = "2"
+                acc_type_2 = "2"
                 category = "cat. 2"
-            else:
-                acc_type2 = "male_speaker"
+            elif acc_type == "female_speaker":
+                acc_type_2 = "male_speaker"
                 category = "male"
+            elif acc_type == "female_speaker_1":
+                acc_type_2 = "male_speaker_1"
+                category = "male"
+            elif acc_type == "female_speaker_2":
+                acc_type_2 = "male_speaker_2"
+                category = "male"
+            else:
+                pass
             
-            if avg_sv and "sv_avg" in results[metric]["zero_shot"][acc_type2]["all"]["correct_ref"]:
+            if avg_sv and "sv_avg" in results[metric]["zero_shot"][acc_type_2]["all"]["correct_ref"]:
                 d2_sv = {
                     "sl": "avg. supervised",
                     "model": map_train_set_model_name[train_set],
                     "category": category,
-                    "all_cor_zs": [results[metric]["zero_shot"][acc_type2]["all"]["correct_ref"]["sv_avg"]],
-                    "all_wro_zs": [results[metric]["zero_shot"][acc_type2]["all"]["wrong_ref"]["sv_avg"]],
-                    "all_diff_zs": [results[metric]["zero_shot"][acc_type2]["all"]["diff_c_w"]["sv_avg"]],
-                    "all_sum_diff_zs": [results[metric]["zero_shot"][acc_type2]["all"]["sum_c_and_diff_c_w"]["sv_avg"]],
+                    "all_cor_zs": [results[metric]["zero_shot"][acc_type_2]["all"]["correct_ref"]["sv_avg"]],
+                    "all_wro_zs": [results[metric]["zero_shot"][acc_type_2]["all"]["wrong_ref"]["sv_avg"]],
+                    "all_diff_zs": [results[metric]["zero_shot"][acc_type_2]["all"]["diff_c_w"]["sv_avg"]],
+                    "all_sum_diff_zs": [results[metric]["zero_shot"][acc_type_2]["all"]["sum_c_and_diff_c_w"]["sv_avg"]],
 
-                    "f_cor_zs": [results[metric]["zero_shot"][acc_type2]["feminine"]["correct_ref"]["sv_avg"]],
-                    "f_wro_zs": [results[metric]["zero_shot"][acc_type2]["feminine"]["wrong_ref"]["sv_avg"]],
-                    "f_diff_zs": [results[metric]["zero_shot"][acc_type2]["feminine"]["diff_c_w"]["sv_avg"]],
-                    "f_sum_diff_zs": [results[metric]["zero_shot"][acc_type2]["feminine"]["sum_c_and_diff_c_w"]["sv_avg"]],
+                    "f_cor_zs": [results[metric]["zero_shot"][acc_type_2]["feminine"]["correct_ref"]["sv_avg"]],
+                    "f_wro_zs": [results[metric]["zero_shot"][acc_type_2]["feminine"]["wrong_ref"]["sv_avg"]],
+                    "f_diff_zs": [results[metric]["zero_shot"][acc_type_2]["feminine"]["diff_c_w"]["sv_avg"]],
+                    "f_sum_diff_zs": [results[metric]["zero_shot"][acc_type_2]["feminine"]["sum_c_and_diff_c_w"]["sv_avg"]],
 
-                    "m_cor_zs": [results[metric]["zero_shot"][acc_type2]["masculine"]["correct_ref"]["sv_avg"]],
-                    "m_wro_zs": [results[metric]["zero_shot"][acc_type2]["masculine"]["wrong_ref"]["sv_avg"]],
-                    "m_diff_zs": [results[metric]["zero_shot"][acc_type2]["masculine"]["diff_c_w"]["sv_avg"]],
-                    "m_sum_diff_zs": [results[metric]["zero_shot"][acc_type2]["masculine"]["sum_c_and_diff_c_w"]["sv_avg"]],
+                    "m_cor_zs": [results[metric]["zero_shot"][acc_type_2]["masculine"]["correct_ref"]["sv_avg"]],
+                    "m_wro_zs": [results[metric]["zero_shot"][acc_type_2]["masculine"]["wrong_ref"]["sv_avg"]],
+                    "m_diff_zs": [results[metric]["zero_shot"][acc_type_2]["masculine"]["diff_c_w"]["sv_avg"]],
+                    "m_sum_diff_zs": [results[metric]["zero_shot"][acc_type_2]["masculine"]["sum_c_and_diff_c_w"]["sv_avg"]],
 
-                    "f_of_cor_zs": [results[metric]["zero_shot"][acc_type2]["f_of_all_c"]["sv_avg"]],
-                    "m_of_cor_zs": [results[metric]["zero_shot"][acc_type2]["m_of_all_c"]["sv_avg"]],
-                    "diff_f_m_of_cor_zs": [results[metric]["zero_shot"][acc_type2]["diff_f_m_of_all_c"]["sv_avg"]],
-                    "gatq_zs": [results[metric]["zero_shot"][acc_type2]["tquality_w_gender_performance"]["sv_avg"]],
+                    "f_of_cor_zs": [results[metric]["zero_shot"][acc_type_2]["f_of_all_c"]["sv_avg"]],
+                    "m_of_cor_zs": [results[metric]["zero_shot"][acc_type_2]["m_of_all_c"]["sv_avg"]],
+                    "diff_f_m_of_cor_zs": [results[metric]["zero_shot"][acc_type_2]["diff_f_m_of_all_c"]["sv_avg"]],
+                    "gatq_zs": [results[metric]["zero_shot"][acc_type_2]["tquality_w_gender_performance"]["sv_avg"]],
 
 
-                    # "all_cor_pv": [results[metric]["pivot"][acc_type2]["all"]["correct_ref"]["sv_avg"]],
-                    # "all_wro_pv": [results[metric]["pivot"][acc_type2]["all"]["wrong_ref"]["sv_avg"]],
-                    # "all_diff_pv": [results[metric]["pivot"][acc_type2]["all"]["diff_c_w"]["sv_avg"]],
-                    # "all_sum_diff_pv": [results[metric]["pivot"][acc_type2]["all"]["sum_c_and_diff_c_w"]["sv_avg"]],
+                    # "all_cor_pv": [results[metric]["pivot"][acc_type_2]["all"]["correct_ref"]["sv_avg"]],
+                    # "all_wro_pv": [results[metric]["pivot"][acc_type_2]["all"]["wrong_ref"]["sv_avg"]],
+                    # "all_diff_pv": [results[metric]["pivot"][acc_type_2]["all"]["diff_c_w"]["sv_avg"]],
+                    # "all_sum_diff_pv": [results[metric]["pivot"][acc_type_2]["all"]["sum_c_and_diff_c_w"]["sv_avg"]],
 
-                    # "f_cor_pv": [results[metric]["pivot"][acc_type2]["feminine"]["correct_ref"]["sv_avg"]],
-                    # "f_wro_pv": [results[metric]["pivot"][acc_type2]["feminine"]["wrong_ref"]["sv_avg"]],
-                    # "f_diff_pv": [results[metric]["pivot"][acc_type2]["feminine"]["diff_c_w"]["sv_avg"]],
-                    # "f_sum_diff_pv": [results[metric]["pivot"][acc_type2]["feminine"]["sum_c_and_diff_c_w"]["sv_avg"]],
+                    # "f_cor_pv": [results[metric]["pivot"][acc_type_2]["feminine"]["correct_ref"]["sv_avg"]],
+                    # "f_wro_pv": [results[metric]["pivot"][acc_type_2]["feminine"]["wrong_ref"]["sv_avg"]],
+                    # "f_diff_pv": [results[metric]["pivot"][acc_type_2]["feminine"]["diff_c_w"]["sv_avg"]],
+                    # "f_sum_diff_pv": [results[metric]["pivot"][acc_type_2]["feminine"]["sum_c_and_diff_c_w"]["sv_avg"]],
 
-                    # "m_cor_pv": [results[metric]["pivot"][acc_type2]["masculine"]["correct_ref"]["sv_avg"]],
-                    # "m_wro_pv": [results[metric]["pivot"][acc_type2]["masculine"]["wrong_ref"]["sv_avg"]],
-                    # "m_diff_pv": [results[metric]["pivot"][acc_type2]["masculine"]["diff_c_w"]["sv_avg"]],
-                    # "m_sum_diff_pv": [results[metric]["pivot"][acc_type2]["masculine"]["sum_c_and_diff_c_w"]["sv_avg"]],
+                    # "m_cor_pv": [results[metric]["pivot"][acc_type_2]["masculine"]["correct_ref"]["sv_avg"]],
+                    # "m_wro_pv": [results[metric]["pivot"][acc_type_2]["masculine"]["wrong_ref"]["sv_avg"]],
+                    # "m_diff_pv": [results[metric]["pivot"][acc_type_2]["masculine"]["diff_c_w"]["sv_avg"]],
+                    # "m_sum_diff_pv": [results[metric]["pivot"][acc_type_2]["masculine"]["sum_c_and_diff_c_w"]["sv_avg"]],
 
-                    # "f_of_cor_pv": [results[metric]["pivot"][acc_type2]["f_of_all_c"]["sv_avg"]],
-                    # "m_of_cor_pv": [results[metric]["pivot"][acc_type2]["m_of_all_c"]["sv_avg"]],
-                    # "diff_f_m_of_cor_pv": [results[metric]["pivot"][acc_type2]["diff_f_m_of_all_c"]["sv_avg"]],
-                    # "gatq_pv": [results[metric]["pivot"][acc_type2]["tquality_w_gender_performance"]["sv_avg"]],
+                    # "f_of_cor_pv": [results[metric]["pivot"][acc_type_2]["f_of_all_c"]["sv_avg"]],
+                    # "m_of_cor_pv": [results[metric]["pivot"][acc_type_2]["m_of_all_c"]["sv_avg"]],
+                    # "diff_f_m_of_cor_pv": [results[metric]["pivot"][acc_type_2]["diff_f_m_of_all_c"]["sv_avg"]],
+                    # "gatq_pv": [results[metric]["pivot"][acc_type_2]["tquality_w_gender_performance"]["sv_avg"]],
 
                 }
                 df = pd.concat([df, pd.DataFrame.from_dict(d2_sv)])
@@ -1481,6 +1900,9 @@ def main_mustshe():
     pred_path = opt.pred_path
     train_set = opt.train_set
     out_path = opt.out_path
+    out_path_csv = opt.out_path_csv
+    out_path_json = opt.out_path_json
+    df_path = opt.df_path
     
     results = get_empty_results_dict()
     results = calc_and_store_results_per_lset(results, raw_path, pred_path)
@@ -1489,7 +1911,7 @@ def main_mustshe():
 
     # export results
     # (1) all
-    with open(f"{out_path}/{train_set}.json", 'w') as file:
+    with open(f"{out_path}/json/{train_set}.json", 'w') as file:
         file.write(json.dumps(results, indent=3)) # use `json.loads` to do the reverse
 
     map_train_set_model_name = {
@@ -1507,45 +1929,66 @@ def main_mustshe():
         "multiwayES.ADV.r32.q": "residual_ES_ADV",
         "multiwayES.ADV.en": "baseline_ES_ADV_en",
         "multiwayES.ADV.en.r32.q": "residual_ES_ADV_en",
+        "twoway.r32.q.SIM": "baseline_EN_AUX",
+        "twoway.new.SIM.r32.q": "residual_EN_AUX",
+        "twoway.r32.q.ADV": "baseline_EN_ADV",
+        "twoway.r32.q.new.ADV": "residual_EN_ADV",
     }
 
     # (2) BLEU
-    out_path_bleu = f"{out_path}/summary_bleu.csv"
+    out_path_bleu = f"{out_path_csv}/summary_bleu.csv"
     if os.path.exists(out_path_bleu):
         df_bleu = pd.read_csv(out_path_bleu, sep=";")
     else:
-        with open(f"{out_path}/df_bleu.pkl", "rb") as file:
+        with open(f"{df_path}/df_bleu.pkl", "rb") as file:
             df_bleu = pickle.load(file)
 
     # (3) Accuracy
-    out_path_acc = f"{out_path}/summary_acc.csv"
+    out_path_acc = f"{out_path_csv}/summary_acc.csv"
     if os.path.exists(out_path_acc):
         df_acc = pd.read_csv(out_path_acc, sep=";")
     else:
-        with open(f"{out_path}/df_acc.pkl", "rb") as file:
+        with open(f"{df_path}/df_acc.pkl", "rb") as file:
             df_acc = pickle.load(file)
 
     # (4) Accuracy (cat)
-    out_path_acc_cat = f"{out_path}/summary_acc_cat.csv"
+    out_path_acc_cat = f"{out_path_csv}/summary_acc_cat.csv"
     if os.path.exists(out_path_acc_cat):
         df_acc_cat = pd.read_csv(out_path_acc_cat, sep=";")
     else:
-        with open(f"{out_path}/df_acc_cat.pkl", "rb") as file:
+        with open(f"{df_path}/df_acc_cat.pkl", "rb") as file:
             df_acc_cat = pickle.load(file)
 
     # (5) Accuracy (speaker)
-    out_path_acc_speaker = f"{out_path}/summary_acc_speaker.csv"
+    out_path_acc_speaker = f"{out_path_csv}/summary_acc_speaker.csv"
     if os.path.exists(out_path_acc_speaker):
         df_acc_speaker = pd.read_csv(out_path_acc_speaker, sep=";")
     else:
-        with open(f"{out_path}/df_acc_speaker.pkl", "rb") as file:
+        with open(f"{df_path}/df_acc_speaker.pkl", "rb") as file:
             df_acc_speaker = pickle.load(file)
+
+    # (6) Accuracy (speaker + cat. 1)
+    out_path_acc_speaker_1 = f"{out_path_csv}/summary_acc_speaker_1.csv"
+    if os.path.exists(out_path_acc_speaker):
+        df_acc_speaker_1 = pd.read_csv(out_path_acc_speaker_1, sep=";")
+    else:
+        with open(f"{df_path}/df_acc_speaker.pkl", "rb") as file:
+            df_acc_speaker_1 = pickle.load(file)
+    # (6) Accuracy (speaker + cat. 2)
+    out_path_acc_speaker_2 = f"{out_path_csv}/summary_acc_speaker_2.csv"
+    if os.path.exists(out_path_acc_speaker):
+        df_acc_speaker_2 = pd.read_csv(out_path_acc_speaker_2, sep=";")
+    else:
+        with open(f"{df_path}/df_acc_speaker.pkl", "rb") as file:
+            df_acc_speaker_2 = pickle.load(file)
 
     incl_avg_sv = False # whether to compute average results for supervised directions
     export_results(results, "BLEU", df_bleu, out_path_bleu, map_train_set_model_name, train_set, avg_sv=incl_avg_sv)
     export_results(results, "accuracy", df_acc, out_path_acc, map_train_set_model_name, train_set, acc_type="total", avg_sv=incl_avg_sv)
     export_results(results, "accuracy", df_acc_cat, out_path_acc_cat, map_train_set_model_name, train_set, acc_type="1", avg_sv=incl_avg_sv)
     export_results(results, "accuracy", df_acc_speaker, out_path_acc_speaker, map_train_set_model_name, train_set, acc_type="female_speaker", avg_sv=incl_avg_sv)
+    export_results(results, "accuracy", df_acc_speaker_1, out_path_acc_speaker_1, map_train_set_model_name, train_set, acc_type="female_speaker_1", avg_sv=incl_avg_sv)
+    export_results(results, "accuracy", df_acc_speaker_2, out_path_acc_speaker_2, map_train_set_model_name, train_set, acc_type="female_speaker_2", avg_sv=incl_avg_sv)
 
 if __name__ == "__main__":
     main_mustshe()
