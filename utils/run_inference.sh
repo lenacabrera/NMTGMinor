@@ -1,4 +1,4 @@
-
+# models
 baseline_EN="twoway.r32.q"
 residual_EN="twoway.r32.q.new"
 baseline_EN_AUX="twoway.r32.q.SIM"
@@ -19,10 +19,8 @@ residual_DE="multiwayDE.r32.q"
 baseline_ESFRIT="multiwayESFRIT"
 residual_ESFRIT="multiwayESFRIT.r32.q.new"
 
-
-# train_sets_en="${baseline_EN} ${residual_EN} ${baseline_EN_AUX} ${residual_ES_AUX} ${baseline_EN_ADV} ${residual_ES_ADV}"
-train_sets_en="${residual_EN} ${baseline_EN_AUX} ${residual_ES_AUX} ${baseline_EN_ADV} ${residual_ES_ADV}"
-train_sets_es="${baseline_ES} ${residual_ES} ${baseline_ES_AUX} ${residual_ES_AUX} $baseline_ES_ADV} ${residual_ES_ADV} ${baseline_ESFRIT} ${residual_ESFRIT}"
+train_sets_en="${baseline_EN} ${residual_EN} ${residual_EN_AUX} ${residual_EN_ADV} ${baseline_EN_ADV} ${residual_EN_ADV}"
+train_sets_es="${baseline_ES} ${residual_ES} ${baseline_ES_AUX} ${residual_ES_AUX} ${baseline_ES_ADV} ${residual_ES_ADV} ${baseline_ESFRIT} ${residual_ESFRIT}"
 train_sets_de="${baseline_DE} ${residual_DE}"
 
 train_sets="${train_sets_en} ${train_sets_es} ${train_sets_de}"
@@ -36,9 +34,9 @@ for train_set in $train_sets; do
     echo PIVOT $train_set
     if [[ $train_sets_en == *$train_set* ]]; then
         pivot=en
-    elif [[ *$train_set* == $train_sets_es ]]; then
+    elif [[ $train_sets_es == *$train_set* ]]; then
         pivot=es
-    elif [[ *$train_set* == $train_sets_de ]]; then
+    elif [[ $train_sets_de == *$train_set* ]]; then
         pivot=de
     else
         echo "Error: Unknown model"

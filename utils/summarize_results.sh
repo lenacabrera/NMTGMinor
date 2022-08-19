@@ -20,12 +20,12 @@ python3 -u $NMTDIR/utils/create_results_data_frames.py \
         -in_path $out_path/xlsx \
         -out_path $out_path_pkl
 
-rm -f $out_path/summary_bleu.csv
-rm -f $out_path/summary_acc.csv
-rm -f $out_path/summary_acc_cat.csv
-rm -f $out_path/summary_acc_speaker.csv
+rm -f $out_path_csv/summary_bleu.csv
+rm -f $out_path_csv/summary_acc.csv
+rm -f $out_path_csv/summary_acc_cat.csv
+rm -f $out_path_csv/summary_acc_speaker.csv
 
-# train_sets="multiwayESFRIT.r32.q.new"
+# train_sets="multiwayESFRIT"
 train_sets="twoway.r32.q twoway.r32.q.new multiwayES multiwayES.r32.q multiwayDE multiwayDE.r32.q multiwayESFRIT multiwayESFRIT.r32.q.new multiwayES.SIM multiwayES.r32.q.SIM multiwayES.ADV multiwayES.ADV.r32.q twoway.r32.q.SIM twoway.new.SIM.r32.q twoway.r32.q.ADV twoway.r32.q.new.ADV"
 
 # mustshe
