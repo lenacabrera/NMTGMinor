@@ -93,7 +93,9 @@ for set_dir in train valid tst-COMMON tst-HE; do
             $DATADIR/mustc/raw/twoway/$set_dir/en-ru.t \
             $DATADIR/mustc/raw/twowayES/$set_dir/
     
+        cp -f $DATADIR/mustc/raw/twoway/$set_dir/es-en.s $DATADIR/mustc/raw/twowayES/$set_dir/es-en.s
         cp -f $DATADIR/mustc/raw/twoway/$set_dir/en-es.s $DATADIR/mustc/raw/twowayES/$set_dir/en-es.s
+        cp -f $DATADIR/mustc/raw/twoway/$set_dir/en-es.t $DATADIR/mustc/raw/twowayES/$set_dir/en-es.t
     for f in $DATADIR/mustc/raw/twowayES/$set_dir/*\.s; do
         lan="$(basename "$f")"
         tl=${lan:0:2}
@@ -132,7 +134,9 @@ for set_dir in train valid tst-COMMON tst-HE; do
             $DATADIR/mustc/raw/twoway/$set_dir/en-ru.t \
             $DATADIR/mustc/raw/twowayDE/$set_dir/
     
+        cp -f $DATADIR/mustc/raw/twoway/$set_dir/de-en.s $DATADIR/mustc/raw/twowayDE/$set_dir/de-en.s
         cp -f $DATADIR/mustc/raw/twoway/$set_dir/en-de.s $DATADIR/mustc/raw/twowayDE/$set_dir/en-de.s
+        cp -f $DATADIR/mustc/raw/twoway/$set_dir/en-de.t $DATADIR/mustc/raw/twowayDE/$set_dir/en-de.t
     for f in $DATADIR/mustc/raw/twowayDE/$set_dir/*\.s; do
         lan="$(basename "$f")"
         tl=${lan:0:2}
