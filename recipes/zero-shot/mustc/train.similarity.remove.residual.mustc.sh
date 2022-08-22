@@ -2,7 +2,7 @@
 source ../config.sh
 
 export systemName=mustc
-export TRAIN_SET=twoway.new  # twoway.r32.q.new, multiwayES.r32.q, multiwayDE.r32.q
+export TRAIN_SET=multiwayDE  # twoway.r32.q.new, multiwayES.r32.q, multiwayDE.r32.q
 
 export BASEDIR=$WORKDIR
 export LAYER=5
@@ -26,6 +26,29 @@ export SKIP_PREPRO=true
 
 export FP16=true
 export MODEL=$TRANSFORMER.$PREPRO_DIR.r${RESIDUAL_AT}${RESIDUAL}.q${QUERY_AT}${QUERY}
+
+export SIMILARITY=true
+export LOAD_FROM_CKPT=model.pt
+if [[ $TRAIN_SET == "twoway.r32.r" ]]; then
+        # baseline_EN
+        echo "Error: For 'baseline' model run dedicated script (train.similarity.baseline.mustc.sh)"
+elif [[ $TRAIN_SET == "twoway.r32.r.new" ]]; then
+        # residual_EN
+        # export LOAD_FROM_CKPT=model_ppl_5.068066_e64.00.pt
+elif [[ $TRAIN_SET == "multiwayES" ]]; then
+        # baseline_ES
+        echo "Error: For 'baseline' model run dedicated script (train.similarity.baseline.mustc.sh)"
+elif [[ $TRAIN_SET == "multiwayES.r32.q" ]]; then
+        # residual_ES
+        # export LOAD_FROM_CKPT=model_ppl_8.431752_e50.00.pt
+elif [[ $TRAIN_SET == "multiwayDE" ]]; then
+        # baseline_DE
+        echo "Error: For 'baseline' model run dedicated script (train.similarity.baseline.mustc.sh)"
+elif [[ $TRAIN_SET == "multiwayDE.r32.q" ]]; then
+        # residual_DE
+        # export LOAD_FROM_CKPT=NULL
+        echo "-load_from not specified yet"
+        exit
 
 # Start training
 echo 'Start training'

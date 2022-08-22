@@ -25,7 +25,7 @@ export RESIDUAL=2 #1: meanpool, 2: no residual
 export SKIP_PREPRO=true
 
 export FP16=true
-export MODEL=$TRANSFORMER.$PREPRO_DIR.r${RESIDUAL_AT}${RESIDUAL}.q${QUERY_AT}${QUERY}.new
+export MODEL=$TRANSFORMER.$PREPRO_DIR.r${RESIDUAL_AT}${RESIDUAL}.q${QUERY_AT}${QUERY}
 
 # Start training
 echo 'Start training'

@@ -1,7 +1,7 @@
 # path=$1
 # path=$DATADIR/mustshe/prepro_20000_subwordnmt/correct_ref
-path=$DATADIR/mustc/prepro_20000_subwordnmt/twoway/valid
-out=/home/lperez/output/summary_mustc_twoway_valid.csv
+path=$DATADIR/mustc/raw/twoway/train
+out=/home/lperez/output/data_summary/summary_mustc_twoway_train.csv
 
 rm -f $out
 

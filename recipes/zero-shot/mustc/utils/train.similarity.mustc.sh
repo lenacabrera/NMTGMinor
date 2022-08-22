@@ -7,6 +7,7 @@
 
 input=$1  # prepro_dir
 name=$2   # model
+load_from_file=$3   # model file
 
 size=512
 if [ $# -ne 2 ]; then

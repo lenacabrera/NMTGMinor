@@ -1933,6 +1933,8 @@ def main_mustshe():
         "twoway.new.SIM.r32.q": "residual_EN_AUX",
         "twoway.r32.q.ADV": "baseline_EN_ADV",
         "twoway.r32.q.new.ADV": "residual_EN_ADV",
+        "twowayES": "baseline_ES_2",
+        "twowayDE": "baseline_DE_2",
     }
 
     # (2) BLEU
