@@ -4,7 +4,12 @@ set -eu
 
 export MODEL=$1 # model name
 export TRAIN_SET=$2
+export EVAL_SET=$3
 export PREPRO_DIR=prepro_20000_subwordnmt
+
+if [ -z "$EVAL_SET" ]; then
+    EVAL_SET=twoway
+fi
 
 LAN="en es it fr"
 # LAN="en it"
@@ -30,7 +35,7 @@ for ref in correct_ref wrong_ref; do
                     echo $sl "->" $tl
 
                     # pred_src=$DATADIR/mustshe/$PREPRO_DIR/$ref/$gender_set/$sl-$tl.s # path to tokenized test data
-                    pred_src=$DATADIR/mustshe/$PREPRO_DIR/correct_ref/$gender_set/$sl-$tl.s # path to tokenized test data
+                    pred_src=$DATADIR/mustshe/$PREPRO_DIR/$EVAL_SET/correct_ref/$gender_set/$sl-$tl.s # path to tokenized test data
                     out=$OUTDIR/$MODEL/mustshe/$TRAIN_SET/$ref/$gender_set/$sl-$tl.pred
                     echo $pred_src
                     bos='#'${tl^^}  # beginning of sentence token: target language

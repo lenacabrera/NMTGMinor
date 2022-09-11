@@ -1,10 +1,14 @@
 # models
 baseline_EN="twoway.r32.q"
 residual_EN="twoway.r32.q.new"
-baseline_EN_AUX="twoway.r32.q.SIM"
-residual_EN_AUX="twoway.new.SIM.r32.q"
-baseline_EN_ADV="twoway.r32.q.ADV"
-residual_EN_ADV="twoway.r32.q.new.ADV"
+baseline_EN_AUX="twoway.SIM"
+residual_EN_AUX="twoway.SIM.r32.q"
+# baseline_EN_AUX="twoway.r32.q.SIM"
+# residual_EN_AUX="twoway.new.SIM.r32.q"
+baseline_EN_ADV="twoway.ADV"
+residual_EN_ADV="twoway.ADV.r32.q"
+# baseline_EN_ADV="twoway.r32.q.ADV"
+# residual_EN_ADV="twoway.new.ADV.r32.q"
 
 baseline_ES="multiwayES"
 residual_ES="multiwayES.r32.q"
@@ -20,34 +24,80 @@ baseline_ESFRIT="multiwayESFRIT"
 residual_ESFRIT="multiwayESFRIT.r32.q.new"
 
 baseline_ES_2="twowayES"
-baseline_DE_2="twowayDE"
+residual_ES_2="twowayES.r32.q"
+baseline_ES_AUX_2="twowayES.SIM"
+residual_ES_AUX_2="twowayES.SIM.r32.q"
+baseline_ES_ADV_2="twowayES.ADV"
+residual_ES_ADV_2="twowayES.ADV.r32.q"
 
-train_sets_en="${baseline_EN} ${residual_EN} ${residual_EN_AUX} ${residual_EN_ADV} ${baseline_EN_ADV} ${residual_EN_ADV}"
-train_sets_es="${baseline_ES} ${residual_ES} ${baseline_ES_AUX} ${residual_ES_AUX} ${baseline_ES_ADV} ${residual_ES_ADV} ${baseline_ESFRIT} ${residual_ESFRIT} ${baseline_ES_2}"
-train_sets_de="${baseline_DE} ${residual_DE} ${baseline_DE_2}"
+baseline_DE_2="twowayDE"
+residual_DE_2="twowayDE"
+baseline_DE_AUX_2="twowayDE.SIM"
+residual_DE_AUX_2="twowayDE.SIM.r32.q"
+baseline_DE_ADV_2="twowayDE.ADV"
+residual_DE_ADV_2="twowayDE.ADV.r32.q"
+
+
+# twoway
+train_en_b="${baseline_EN} ${baseline_EN_AUX} ${baseline_EN_ADV}"
+train_en_r="${residual_EN} ${residual_EN_AUX} ${residual_EN_ADV}"
+train_en="${train_en_b} ${train_en_r}"
+
+train_es_b_2="${baseline_ES_2} ${baseline_ES_AUX_2} ${baseline_ES_ADV_2}"
+train_es_r_2="${residual_ES_2} ${residual_ES_AUX_2} ${residual_ES_ADV_2}"
+train_es_2="${train_es_b_2} ${train_es_r_2}"
+
+train_de_b_2="${baseline_DE_2} ${baseline_DE_AUX_2} ${baseline_DE_ADV_2}"
+train_de_r_2="${residual_DE_2} ${residual_DE_AUX_2} ${residual_DE_ADV_2}"
+train_de_2="${train_de_b_2} ${train_de_r_2}"
+
+# # multiway
+# train_es_b="${baseline_ES} ${baseline_ES_AUX} ${baseline_ES_ADV}"
+# train_es_r="${residual_ES} ${residual_ES_AUX} ${residual_ES_ADV}"
+# train_es="${train_es_b} ${train_es_r}"
+
+# train_de_b="${baseline_DE} ${baseline_DE_AUX} ${baseline_DE_ADV}"
+# train_de_r="${residual_DE} ${residual_DE_AUX} ${residual_DE_ADV}"
+# train_de="${train_de_b} ${train_de_r}"
+
+
+# group training sets
+train_sets_en="${train_en}"
+train_sets_es="${train_es_2}" # ${baseline_ESFRIT} ${residual_ESFRIT}"
+# train_sets_es="${train_es} ${train_es_2}" # ${baseline_ESFRIT} ${residual_ESFRIT}"
+train_sets_de="${train_de_2}"
+# train_sets_de="${train_de} ${train_de_2}"
+
+# train_sets_es="${baseline_ES} ${residual_ES} ${baseline_ES_AUX} ${residual_ES_AUX} ${baseline_ES_ADV} ${residual_ES_ADV} ${baseline_ESFRIT} ${residual_ESFRIT} ${baseline_ES_2}"
+# train_sets_de="${baseline_DE} ${residual_DE} ${baseline_DE_2}"
 
 # train_sets="${train_sets_en} ${train_sets_es} ${train_sets_de}"
-# train_sets="${baseline_ES_2}"
-train_sets="${baseline_DE_2}"
+# train_sets="${baseline_DE_AUX_2}"
+train_sets="${baseline_EN_AUX} ${residual_EN_AUX}" # ${baseline_EN_AUX} ${residual_EN_AUX}
 
 # mustshe
 for train_set in $train_sets; do
-    echo $train_set
-    # zero-shot
-    bash $SCRIPTDIR/mustshe/pred.mustshe.sh transformer.mustc $train_set
-    pivot
-    echo PIVOT $train_set
+    # pick correct eval set -> tokenization based on training data
+    eval_set=twoway
     if [[ $train_sets_en == *$train_set* ]]; then
+        eval_set=twoway
         pivot=en
     elif [[ $train_sets_es == *$train_set* ]]; then
+        eval_set=twowayES
         pivot=es
     elif [[ $train_sets_de == *$train_set* ]]; then
+        eval_set=twowayDE
         pivot=de
     else
         echo "Error: Unknown model"
         exit
     fi
-    bash $SCRIPTDIR/mustshe/pred.pivot.mustshe.sh transformer.mustc $pivot $train_set
+
+    echo $train_set $eval_set
+    # zero-shot
+    bash $SCRIPTDIR/mustshe/pred.mustshe.sh transformer.mustc $train_set $eval_set
+    # pivot
+    bash $SCRIPTDIR/mustshe/pred.pivot.mustshe.sh transformer.mustc $pivot $train_set $eval_set
 done
 
 
@@ -55,7 +105,7 @@ done
 # for train_set in $train_sets; do
 #     echo $train_set
 #     # zero-shot
-#     bash $SCRIPTDIR/mustc/pred.mustc.sh transformer.mustc $train_set multiway
+#     bash $SCRIPTDIR/mustc/pred.mustc.sh transformer.mustc $train_set $EVAL_SET
 #     echo PIVOT $train_set
 #     if [[ $train_sets_en == *$train_set* ]]; then
 #         pivot=en
@@ -67,5 +117,5 @@ done
 #         echo "Error: Unknown model"
 #         exit
 #     fi
-#     bash $SCRIPTDIR/mustc/pred.pivot.mustc.sh transformer.mustc $pivot $train_set multiway
+#     bash $SCRIPTDIR/mustc/pred.pivot.mustc.sh transformer.mustc $pivot $train_set $EVAL_SET
 # done
