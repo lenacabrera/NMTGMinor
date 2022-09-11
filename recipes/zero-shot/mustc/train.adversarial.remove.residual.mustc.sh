@@ -2,13 +2,13 @@
 source ../config.sh
 
 export systemName=mustc
-export TRAIN_SET=twoway.new  # twoway.r32.q, twoway.r32.q.new, multiwayES, multiwayES.r32.q, multiwayDE, multiwayDE.r32.q
+export TRAIN_SET=twoway  # twoway, twowayES, twowayDE
 
 export BASEDIR=$WORKDIR
 export LAYER=5
 export TRANSFORMER=transformer
 export ENC_LAYER=5
-export WUS=8000
+export WUS=400
 export HEAD=8
 
 # data setup

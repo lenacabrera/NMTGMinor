@@ -173,9 +173,14 @@ python3 -u $NMTDIR/train.py \
         -gradient_scale 0.1 \
         -load_from $BASEDIR/model/${name}/checkpoints/model_ppl_5.068066_e64.00.pt \
         $magic_str $gpu_string_train &> $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log
-        # $magic_str $gpu_string_train &> $BASEDIR/model/${name}/{$DATE_AND_TIME}_train.log
 
-# load_from baseline -> model_ppl_8.229582_e54.00.pt, residual -> model_ppl_8.431752_e50.00.pt
+# twoway -> model_ppl_4.960131_e64.00.pt
+# twowayES -> model_ppl_6.074664_e64.00.pt
+# twowayDE -> model_ppl_6.937025_e64.00.pt
+
+# twoway.r32.q -> model_ppl_5.068066_e64.00.pt
+# twowayES.r32.q -> model_ppl_6.183620_e64.00.pt
+# twowayDE.r32.q -> model_ppl_7.067761_e64.00.pt
 
 cp $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log $BASEDIR/model/${name}/${DATE_AND_TIME}_train.log
 checkpoints=""
