@@ -25,9 +25,52 @@ rm -f $out_path_csv/summary_acc.csv
 rm -f $out_path_csv/summary_acc_cat.csv
 rm -f $out_path_csv/summary_acc_speaker.csv
 
-# train_sets="multiwayESFRIT"
-train_sets="twoway.r32.q twoway.r32.q.new multiwayES multiwayES.r32.q multiwayDE multiwayDE.r32.q multiwayESFRIT multiwayESFRIT.r32.q.new multiwayES.SIM multiwayES.r32.q.SIM multiwayES.ADV multiwayES.ADV.r32.q twoway.r32.q.SIM twoway.new.SIM.r32.q twoway.r32.q.ADV twoway.r32.q.new.ADV twowayES twowayDE"
-train_sets="twowayES twowayDE"
+
+baseline_EN="twoway.r32.q"
+residual_EN="twoway.r32.q.new"
+baseline_EN_AUX="twoway.SIM"
+residual_EN_AUX="twoway.SIM.r32.q"
+baseline_EN_ADV="twoway.ADV"
+residual_EN_ADV="twoway.ADV.r32.q"
+# baseline_EN_ADV="twoway.r32.q.ADV"
+# residual_EN_ADV="twoway.new.ADV.r32.q"
+# residual_EN_ADV="twoway.r32.q.new.ADV"
+
+baseline_ES="multiwayES"
+residual_ES="multiwayES.r32.q"
+baseline_ES_AUX="multiwayES.SIM"
+residual_ES_AUX="multiwayES.r32.q.SIM"
+baseline_ES_ADV="multiwayES.ADV"
+residual_ES_ADV="multiwayES.ADV.r32.q"
+
+baseline_DE="multiwayDE"
+residual_DE="multiwayDE.r32.q"
+
+baseline_ESFRIT="multiwayESFRIT"
+residual_ESFRIT="multiwayESFRIT.r32.q.new"
+
+baseline_ES_2="twowayES"
+residual_ES_2="twowayES.r32.q"
+baseline_ES_AUX_2="twowayES.SIM"
+residual_ES_AUX_2="twowayES.SIM.r32.q"
+baseline_ES_ADV_2="twowayES.ADV"
+residual_ES_ADV_2="twowayES.ADV.r32.q"
+
+baseline_DE_2="twowayDE"
+residual_DE_2="twowayDE.r32.q"
+baseline_DE_AUX_2="twowayDE.SIM"
+residual_DE_AUX_2="twowayDE.SIM.r32.q"
+baseline_DE_ADV_2="twowayDE.ADV"
+residual_DE_ADV_2="twowayDE.ADV.r32.q"
+
+train_sets_en="${baseline_EN} ${residual_EN} ${baseline_EN_AUX} ${residual_EN_AUX} ${baseline_EN_ADV} ${residual_EN_ADV}"
+train_sets_es="${baseline_ES_2} ${residual_ES_2} ${baseline_ES_AUX_2} ${residual_ES_AUX_2} ${baseline_ES_ADV_2} ${residual_ES_ADV_2}"
+train_sets_de="${baseline_DE_2} ${residual_DE_2} ${baseline_DE_AUX_2} ${residual_DE_AUX_2} ${baseline_DE_ADV_2} ${residual_DE_ADV_2}"
+train_sets="${train_sets_en} ${train_sets_es} ${train_sets_de}"
+# train_sets="${baseline_ES_ADV_2} ${residual_ES_ADV_2} ${baseline_DE_ADV_2} ${residual_DE_ADV_2}"
+
+# train_sets="twoway.r32.q twoway.r32.q.new multiwayES multiwayES.r32.q multiwayDE multiwayDE.r32.q multiwayESFRIT multiwayESFRIT.r32.q.new multiwayES.SIM multiwayES.r32.q.SIM multiwayES.ADV multiwayES.ADV.r32.q twoway.r32.q.SIM twoway.new.SIM.r32.q twoway.r32.q.ADV twoway.r32.q.new.ADV twowayES twowayDE"
+# train_sets="twowayES twowayES.r32.q"
 
 # mustshe
 for train_set in $train_sets; do

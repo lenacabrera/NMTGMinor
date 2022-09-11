@@ -1917,24 +1917,42 @@ def main_mustshe():
     map_train_set_model_name = {
         "twoway.r32.q": "baseline_EN",
         "twoway.r32.q.new": "residual_EN",
+        "twoway.SIM": "baseline_EN_AUX",
+        "twoway.SIM.r32.q": "residual_EN_AUX",
+        "twoway.ADV": "baseline_EN_ADV",
+        "twoway.ADV.r32.q": "residual_EN_ADV",
+        # "twoway.r32.q.ADV": "baseline_EN_ADV",
+        # "twoway.r32.q.new.ADV": "residual_EN_ADV",
+
         "multiwayES": "baseline_ES",
         "multiwayES.r32.q": "residual_ES",
-        "multiwayESFRIT": "baseline_ESFRIT",
-        "multiwayESFRIT.r32.q.new": "residual_ESFRIT",
-        "multiwayDE": "baseline_DE",
-        "multiwayDE.r32.q": "residual_DE",
         "multiwayES.SIM": "baseline_ES_AUX",
         "multiwayES.r32.q.SIM": "residual_ES_AUX",
         "multiwayES.ADV": "baseline_ES_ADV",
         "multiwayES.ADV.r32.q": "residual_ES_ADV",
+
         "multiwayES.ADV.en": "baseline_ES_ADV_en",
         "multiwayES.ADV.en.r32.q": "residual_ES_ADV_en",
-        "twoway.r32.q.SIM": "baseline_EN_AUX",
-        "twoway.new.SIM.r32.q": "residual_EN_AUX",
-        "twoway.r32.q.ADV": "baseline_EN_ADV",
-        "twoway.r32.q.new.ADV": "residual_EN_ADV",
+
+        "multiwayDE": "baseline_DE",
+        "multiwayDE.r32.q": "residual_DE",
+
+        "multiwayESFRIT": "baseline_ESFRIT",
+        "multiwayESFRIT.r32.q.new": "residual_ESFRIT",
+
         "twowayES": "baseline_ES_2",
+        "twowayES.r32.q": "residual_ES_2",
+        "twowayES.SIM": "baseline_ES_AUX_2",
+        "twowayES.SIM.r32.q": "residual_ES_AUX_2",
+        "twowayES.ADV": "baseline_ES_ADV_2",
+        "twowayES.ADV.r32.q": "residual_ES_ADV_2",
+
         "twowayDE": "baseline_DE_2",
+        "twowayDE.r32.q": "residual_DE_2",
+        "twowayDE.SIM": "baseline_DE_AUX_2",
+        "twowayDE.SIM.r32.q": "residual_DE_AUX_2",
+        "twowayDE.ADV": "baseline_DE_ADV_2",
+        "twowayDE.ADV.r32.q": "residual_DE_ADV_2",
     }
 
     # (2) BLEU
