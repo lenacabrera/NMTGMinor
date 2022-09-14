@@ -171,7 +171,8 @@ python3 -u $NMTDIR/train.py \
         -en_id 3 \
         -language_classifer_mid_layer_size 128 \
         -gradient_scale 0.1 \
-        -load_from $BASEDIR/model/${name}/checkpoints/model_ppl_5.068066_e64.00.pt \
+        -adversarial_classifier_start_from 0 \
+        -load_from $BASEDIR/model/${name}/checkpoints/model_ppl_7.067761_e64.00.pt \
         $magic_str $gpu_string_train &> $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log
 
 # twoway -> model_ppl_4.960131_e64.00.pt
