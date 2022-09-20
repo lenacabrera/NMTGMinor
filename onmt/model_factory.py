@@ -49,6 +49,7 @@ def build_tm_model(opt, dicts):
                                                           fix_norm=opt.fix_norm_output_embedding)]
 
     # build classifier
+    # (1) language
     if opt.language_classifier:
         mid_layer_size = opt.language_classifer_mid_layer_size
 
@@ -78,6 +79,25 @@ def build_tm_model(opt, dicts):
                                                                fix_norm=False, grad_scale=opt.gradient_scale,
                                                                mid_layer_size=mid_layer_size,
                                                                input_name=classifier_input_name))
+
+    # (2) gender
+    if opt.gender_classifier:
+        gender_mid_layer_size = opt.gender_mid_layer_size
+
+        gender_output_size = 2 # TODO 3 + 1 b/c of padding?
+        opt.gender_token_classifier = 0
+
+        if opt.gender_token_classifier_at is not None and opt.gender_token_classifier_at != -1:
+            gender_classifier_input_name = 'mid_layer_output'  # specified encoder layer
+        else:
+            gender_classifier_input_name = 'context'   # encoder output
+
+        generators.append(onmt.modules.base_seq2seq.Classifier(hidden_size=opt.model_size,
+                                                               output_size=gender_output_size,  # padding is 0
+                                                               fix_norm=False, grad_scale=opt.gradient_scale,
+                                                               mid_layer_size=gender_mid_layer_size,
+                                                               input_name=gender_classifier_input_name))
+        print(f"Num. of generators: {len(generators)}")
 
     # BUILD EMBEDDINGS
     if 'src' in dicts:

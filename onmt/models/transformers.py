@@ -118,6 +118,7 @@ class MultiSourceEncoder(nn.Module):
         self.do_mixing = opt.mix_encoder_outputs
         self.enc_out_type = opt.enc_out_type
         self.language_classifier = opt.language_classifier
+        self.gender_classifier = opt.gender_classifier
 
     def forward(self, input, input_lang=None, **kwargs):
         if isinstance(input, list):  #self.training:  # training time, randomly choose
@@ -237,10 +238,16 @@ class TransformerEncoder(nn.Module):
             self.requires_grad_(False)
 
         self.language_classifier = opt.language_classifier
-        self.language_classifier_sent = opt.language_classifier_sent
+        self.language_classifier_sent = opt.language_classifier_sent # not implemented yet?
+
+        self.gender_classifier = opt.gender_classifier
+        # self.gender_classifier_sent = opt.gender_classifier_sent # not implemented yet?
 
         self.token_classifier_at = opt.token_classifier_at
         self.language_specific_encoder = opt.language_specific_encoder
+
+        self.gender_token_classifier_at = opt.gender_token_classifier_at
+        # self.gender_specific_encoder = opt.gender_specific_encoder # not yet
 
 
     def build_modules(self, opt):
@@ -405,6 +412,10 @@ class TransformerEncoder(nn.Module):
 
             if self.token_classifier_at is not None and self.token_classifier_at == i+1:
                 output_dict['mid_layer_output'] = context.masked_fill(mask_src.permute(2, 0, 1), 0).type_as(context)
+
+            if self.gender_token_classifier_at is not None and self.gender_token_classifier_at == i+1:
+                output_dict['mid_layer_output'] = context.masked_fill(mask_src.permute(2, 0, 1), 0).type_as(context)
+            
             # output of layer
         # From Google T2T
         # if normalization is done in layer_preprocess, then it should also be done
@@ -834,6 +845,11 @@ class Transformer(NMTModel):
             logprobs_lan = self.generator[1](encoder_output)
             output_dict['logprobs_lan'] = logprobs_lan
 
+        if self.encoder.gender_classifier:  # make language classification
+            logprobs_gen = self.generator[1](encoder_output)
+            # print("TRANSFORMERS.py outputs of classifier logprobs_gen: ", logprobs_gen.size())
+            output_dict['logprobs_gen'] = logprobs_gen
+            
         # Mirror network: reverse the target sequence and perform backward language model
         if mirror:
             tgt_reverse = torch.flip(batch.get('target_input'), (0, ))

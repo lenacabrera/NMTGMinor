@@ -11,7 +11,7 @@ export ENC_LAYER=5
 export WUS=400
 export HEAD=8
 
-export EPOCHS=1
+export EPOCHS=10
 
 # data setup
 export PREPRO_DIR=$systemName/prepro_20000_subwordnmt/$TRAIN_SET.GEN
@@ -30,7 +30,7 @@ export MODEL=$TRANSFORMER.$PREPRO_DIR
 # mkdir $BASEDIR/$MODEL
 # cp -R $BASEDIR/model/$systemName/prepro_20000_subwordnmt/$TRAIN_SET $BASEDIR/$MODEL
 
-export CLASSIFICATION_TYPE=1 # gender clf
+export CLASSIFICATION_TYPE=0 # gender clf
 
 # Start training
 echo 'Start training'

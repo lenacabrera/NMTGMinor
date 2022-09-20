@@ -386,7 +386,7 @@ class XETrainer(BaseTrainer):
         total_words = 0
         total_adv_loss = 0.0
         report_cm = True
-        if self.opt.language_classifier:
+        if self.opt.language_classifier or self.opt.gender_classifier:
             total_predict, correct_predict = 0.0, 0.0
             num_labels = self.model.generator[1].output_size
             res = torch.zeros(num_labels)
@@ -573,7 +573,96 @@ class XETrainer(BaseTrainer):
                             res_per_row = torch.stack(all_cnt, dim=0)
                             cm.index_add_(0, torch.arange(num_labels, device='cpu'), res_per_row)
 
-            if opt.token_classifier is not None and report_classifier:
+
+                # gender classifier
+                if opt.gender_classifier and opt.gender_classifier_tok:
+                    targets_classifier = batch.get('gen') # gen
+                    classifier_loss_dict = self.loss_function(outputs, targets=targets_classifier, model=self.model,
+                                                              gen_classifier=True)
+                    classifier_loss_data = classifier_loss_dict['data'] if classifier_loss_dict['data'] is not None else 0
+                    total_adv_loss += classifier_loss_data
+
+                    if bidirectional_translation:
+                        # TODO lena, change
+                        # raise NotImplementedError
+                        targets_classifier_rev = batch.get('targets_source_gen') # gen
+
+                        classifier_loss_dict = self.loss_function(outputs_rev, targets=targets_classifier_rev, model=self.model,
+                                                                  gen_classifier=True)
+                        classifier_loss_data += classifier_loss_dict['data']
+                        total_adv_loss += classifier_loss_data
+
+                    if opt.gender_token_classifier is not None and report_classifier:
+                        logprobs_gen = outputs['logprobs_gen']
+                        # logprobs_gen = logprobs_gen.masked_fill(outputs['src_mask'].permute(2, 0, 1),
+                        #                                                 onmt.constants.PAD).type_as(logprobs_gen)
+                        pred = logprobs_gen  # T, B, V
+
+                        pred_idx = torch.argmax(pred, dim=-1).cpu()  # T, B. starts from 0
+                        correct_idx = (targets_classifier.cpu() - 1 == pred_idx) # padding not counted, since 0 - 1 would be -1
+
+                        print("predictions: ", pred_idx)
+                        print("targets: ", targets_classifier.cpu() - 1)
+
+                        correct_predict += correct_idx.sum()
+                        total_predict += targets_classifier.size()[0]  # TODO lena now sentence level, later tok
+                        # total_predict += (~outputs['src_mask']).sum()
+
+                        if bidirectional_translation:
+                            logprobs_gen = outputs_rev['logprobs_gen']
+                            # logprobs_gen = logprobs_gen.masked_fill(outputs_rev['src_mask'].permute(2, 0, 1),
+                            #                                         onmt.constants.PAD).type_as(logprobs_gen)
+                            pred = logprobs_gen  # T, B, V
+
+                            pred_idx_rev = torch.argmax(pred, dim=-1).cpu()  # T, B. starts from 0
+                            correct_idx_rev = (targets_classifier_rev.cpu() - 1 == pred_idx_rev)
+
+                            correct_predict += correct_idx_rev.sum()
+                            total_predict += targets_classifier_rev.size()[0]  # TODO lena now sentence level, later tok
+                            # total_predict += (~outputs_rev['src_mask']).sum()
+
+                        if report_cm:
+                            all_cnt = []
+                            if opt.gender_token_classifier == 0:   # language label starts from 1
+                                label_range = torch.arange(num_labels)
+                                # label_range = torch.arange(1, num_labels + 1)  # TODO uncomment
+                            else:
+                                label_range = torch.arange(num_labels)
+
+                            for p in label_range:  # 1, 2, 3, 4
+                                cur_label_indx = (targets_classifier == p)  # those positions with this current label
+                                pred_val, pred_cnt = torch.unique(pred_idx[cur_label_indx], return_counts=True)
+
+                                if pred_val.shape[0] < num_labels:  # not all labels have been predicted
+                                    pred_cnt_padded = torch.zeros(num_labels, dtype=torch.long, device='cpu')
+                                    pred_cnt_padded[pred_val] = pred_cnt
+                                    pred_cnt = pred_cnt_padded
+                                    # print("not all labels have been predicted, pred_cnt: ", pred_cnt)
+                                elif pred_val.shape[0] > num_labels:
+                                    raise ValueError('Some impossible label was predicted. Check your label esp. indexing.')
+
+                                all_cnt.append(pred_cnt)
+                            # print("all_cnt: ", all_cnt)
+
+                            if bidirectional_translation:
+                                for p in label_range:  # 1, 2, 3, 4
+                                    cur_label_indx = (targets_classifier_rev == p)
+                                    pred_val, pred_cnt = torch.unique(pred_idx_rev[cur_label_indx], return_counts=True)
+                                    if pred_val.shape[0] < num_labels:  # not all labels have been predicted
+                                        pred_cnt_padded = torch.zeros(num_labels, dtype=torch.long, device='cpu')
+                                        pred_cnt_padded[pred_val] = pred_cnt
+                                        pred_cnt = pred_cnt_padded
+                                    elif pred_val.shape[0] > num_labels:
+                                        raise ValueError('Some impossible label was predicted. Check your label esp. indexing.')
+
+                                    all_cnt[p-1] += pred_cnt
+
+                            res_per_row = torch.stack(all_cnt, dim=0)
+                            cm.index_add_(0, torch.arange(num_labels, device='cpu'), res_per_row)
+                
+
+            if (opt.token_classifier is not None or opt.gender_token_classifier is not None) and report_classifier:
+                print("correct_predict, total_predict: ", correct_predict, total_predict)
                 print('Classifier accuracy', (correct_predict / total_predict).data.item())
 
                 if report_cm:
@@ -663,7 +752,8 @@ class XETrainer(BaseTrainer):
 
                 optimizer = self.optim.optimizer
 
-                has_classifier_loss = self.opt.token_classifier is not None and not self.opt.freeze_language_classifier
+                has_classifier_loss = (self.opt.token_classifier is not None and not self.opt.freeze_language_classifier) or \
+                    (self.opt.gender_token_classifier is not None) # and not self.opt.freeze_language_classifier)
                 use_aux_loss = epoch >= self.opt.aux_loss_start_from
 
                 if not has_classifier_loss:
@@ -724,44 +814,45 @@ class XETrainer(BaseTrainer):
                     self.model.encoder.requires_grad_(False)
                     self.model.decoder.requires_grad_(False)
 
-                    if self.opt.token_classifier == 0:  # language ID
-                        targets_classifier = batch.get('targets_source_lang')
-                    elif self.opt.token_classifier == 1:     # predict source token ID
-                        targets_classifier = batch.get('source')
-                    elif self.opt.token_classifier == 2:     # predict positional ID
-                        targets_classifier = batch.get('source_pos')
-                        targets_classifier[targets_classifier != 0] += 1  # start from 0
-                        targets_classifier[0, :] += 1
-                    elif self.opt.token_classifier == 3:     # predict POS tag
-                        raise NotImplementedError
-
-                    classifier_loss_dict = self.loss_function(outputs, targets=targets_classifier,
-                                                              model=self.model, lan_classifier=True)
-                    classifier_loss = classifier_loss_dict['loss'].div(
-                        denom)  # a little trick to avoid gradient overflow with fp16
-                    classifier_loss_data = classifier_loss_dict['data']
-                    classifier_loss_data_rev = 0
-                    # calc gradient for lan classifier
-                    if self.cuda:
-                        with amp.scale_loss(classifier_loss, optimizer) as scaled_loss:
-                            scaled_loss.backward(retain_graph=self.opt.bidirectional_translation)
-                    else:
-                        classifier_loss.backward(retain_graph=self.opt.bidirectional_translation)
-
-                    if self.opt.bidirectional_translation:
-                        if opt.token_classifier == 0:
-                            # predict language ID
-                            targets_classifier = batch.get('targets_target_lang')  # starts from 1 (0 is padding)
-                        elif opt.token_classifier == 1:
-                            # predict source token ID
-                            targets_classifier = batch.get('target')  # starts from 0 (padding), real tokens starts from 1
-                        elif opt.token_classifier == 2:
-                            # predict positional ID
-                            targets_classifier = batch.get('target_pos')
+                    if self.opt.language_classifier:
+                        if self.opt.token_classifier == 0:  # language ID
+                            targets_classifier = batch.get('targets_source_lang')
+                        elif self.opt.token_classifier == 1:     # predict source token ID
+                            targets_classifier = batch.get('source')
+                        elif self.opt.token_classifier == 2:     # predict positional ID
+                            targets_classifier = batch.get('source_pos')
                             targets_classifier[targets_classifier != 0] += 1  # start from 0
                             targets_classifier[0, :] += 1
-                        else:
+                        elif self.opt.token_classifier == 3:     # predict POS tag
                             raise NotImplementedError
+
+                        classifier_loss_dict = self.loss_function(outputs, targets=targets_classifier,
+                                                                model=self.model, lan_classifier=True)
+                        classifier_loss = classifier_loss_dict['loss'].div(
+                            denom)  # a little trick to avoid gradient overflow with fp16
+                        classifier_loss_data = classifier_loss_dict['data']
+                        classifier_loss_data_rev = 0
+                        # calc gradient for lan classifier
+                        if self.cuda:
+                            with amp.scale_loss(classifier_loss, optimizer) as scaled_loss:
+                                scaled_loss.backward(retain_graph=self.opt.bidirectional_translation)
+                        else:
+                            classifier_loss.backward(retain_graph=self.opt.bidirectional_translation)
+
+                        if self.opt.bidirectional_translation:
+                            if opt.token_classifier == 0:
+                                # predict language ID
+                                targets_classifier = batch.get('targets_target_lang')  # starts from 1 (0 is padding)
+                            elif opt.token_classifier == 1:
+                                # predict source token ID
+                                targets_classifier = batch.get('target')  # starts from 0 (padding), real tokens starts from 1
+                            elif opt.token_classifier == 2:
+                                # predict positional ID
+                                targets_classifier = batch.get('target_pos')
+                                targets_classifier[targets_classifier != 0] += 1  # start from 0
+                                targets_classifier[0, :] += 1
+                            else:
+                                raise NotImplementedError
 
                         outputs_rev = self.model(batch, streaming=opt.streaming, target_mask=tgt_mask,
                                                  zero_encoder=opt.zero_encoder,
@@ -780,6 +871,46 @@ class XETrainer(BaseTrainer):
                                 scaled_loss.backward()
                         else:
                             classifier_loss.backward()
+
+
+                    # if self.opt.gender_classifier:
+                    #     # gender classifier
+                    #     targets_classifier = batch.get('gen')
+
+                    #     classifier_loss_dict = self.loss_function(outputs, targets=targets_classifier,
+                    #                                             model=self.model, gen_classifier=True)
+                    #     classifier_loss = classifier_loss_dict['loss'].div(
+                    #         denom)  # a little trick to avoid gradient overflow with fp16
+                    #     classifier_loss_data = classifier_loss_dict['data']
+                    #     classifier_loss_data_rev = 0
+                    #     # calc gradient for lan classifier
+                    #     if self.cuda:
+                    #         with amp.scale_loss(classifier_loss, optimizer) as scaled_loss:
+                    #             scaled_loss.backward(retain_graph=self.opt.bidirectional_translation)
+                    #     else:
+                    #         classifier_loss.backward(retain_graph=self.opt.bidirectional_translation)
+
+                    #     if self.opt.bidirectional_translation:
+                    #         # gender classifier
+                    #         targets_classifier = batch.get('gen')
+
+                    #         outputs_rev = self.model(batch, streaming=opt.streaming, target_mask=tgt_mask,
+                    #                                 zero_encoder=opt.zero_encoder,
+                    #                                 mirror=opt.mirror_loss, streaming_state=streaming_state,
+                    #                                 reverse_src_tgt=True)
+
+                    #         classifier_loss_dict = self.loss_function(outputs_rev, targets=targets_classifier,
+                    #                                                 model=self.model, gen_classifier=True)
+                    #         classifier_loss = classifier_loss_dict['loss'].div(
+                    #             denom)  # a little trick to avoid gradient overflow with fp16
+                    #         classifier_loss_data += classifier_loss_dict['data']
+                    #         classifier_loss_data_rev += 0
+                    #         # calc gradient for lan classifier
+                    #         if self.cuda:
+                    #             with amp.scale_loss(classifier_loss, optimizer) as scaled_loss:
+                    #                 scaled_loss.backward()
+                    #         else:
+                    #             classifier_loss.backward()
 
             except RuntimeError as e:
                 if 'out of memory' in str(e):
@@ -944,7 +1075,7 @@ class XETrainer(BaseTrainer):
         # if opt.load_decoder_from:
         #     self.load_decoder_weight(opt.load_decoder_from)
 
-        report_classifier = opt.token_classifier is not None
+        report_classifier = opt.token_classifier is not None or opt.gender_token_classifier is not None
         report_confusion_matrix = opt.token_classifier == 0
         # if we are on a GPU: warm up the memory allocator
         if self.cuda:

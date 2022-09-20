@@ -318,6 +318,27 @@ def make_parser(parser):
     parser.add_argument('-gradient_scale', type=float, default=1.0,
                         help='Scale for flipped gradient from adversarial classifier')
 
+    # Gender Encoding
+    parser.add_argument('-gender_classifier', action='store_true',
+                        help='Whether to use a gender classifier')
+    parser.add_argument('-gender_classifier_tok', action='store_true',
+                        help='Whether to use a gender classifier (tok level)')
+
+    parser.add_argument('-gender_mid_layer_size', type=int, default=0,
+                        help='If > 0, add aother FC layer for language classifier of this size.')
+    # parser.add_argument('-en_id', type=int, default=None,
+    #                     help='If not none, when classifying languages, only distinguish between en and non-en')
+
+    parser.add_argument('-gender_token_classifier_at', type=int, default=None,
+                        help='Where to do token-level classification. 1 (1st)|-1 (last)|0 (all)|None')
+    parser.add_argument('-gender_token_classifier', type=int, default=None,
+                        help='Whether to use a token classifier on top of encoder states. '
+                             '1: classify vocabulary ID, 2: classify position ID, 3: classify positional encoding')
+
+    parser.add_argument('-gender_classifier_start_from', type=int, default=0,
+                    help='From which epoch will the gender classifier start')
+
+
     # Save activation
     parser.add_argument('-att_plot_path', type=str, default=None,
                         help='If not None, save encoder att distribution from the layer where change is applied.')
@@ -432,6 +453,9 @@ def backward_compatible(opt):
     if not hasattr(opt, 'language_classifier'):
         opt.language_classifier = False
 
+    if not hasattr(opt, 'gender_classifier'):
+        opt.gender_classifier = False
+
     if not hasattr(opt, 'language_classifier_sent'):
         opt.language_classifier_sent = False
 
@@ -444,8 +468,14 @@ def backward_compatible(opt):
     if not hasattr(opt, 'token_classifier'):
         opt.token_classifier = None
 
+    if not hasattr(opt, 'gender_token_classifier'):
+        opt.gender_token_classifier = None
+
     if not hasattr(opt, 'token_classifier_at'):
         opt.token_classifier_at = None
+
+    if not hasattr(opt, 'gender_token_classifier_at'):
+        opt.gender_token_classifier_at = None
 
     if not hasattr(opt, 'gradient_scale'):
         opt.gradient_scale = 1.0

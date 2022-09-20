@@ -7,8 +7,8 @@ import argparse
 import torch
 import time, datetime
 from onmt.train_utils.trainer import XETrainer
-from onmt.train_utils.trainer_zoo import XEAdversarialTrainer
-from onmt.modules.loss import NMTLossFunc, NMTAndCTCLossFunc, MSEEncoderLoss, CosineEncoderLoss
+from onmt.train_utils.trainer_zoo import XEAdversarialTrainer, XEGenderTrainer
+from onmt.modules.loss import NMTLossFunc, NMTAndCTCLossFunc, MSEEncoderLoss, CosineEncoderLoss, CrossEntropyLossBase
 from onmt.model_factory import build_model, optimize_model
 from options import make_parser
 from collections import defaultdict
@@ -188,6 +188,19 @@ def main():
                 train_src_langs.append(torch.Tensor([dicts['langs']['src']]))
                 train_tgt_langs.append(torch.Tensor([dicts['langs']['tgt']]))
 
+
+            # check if gender files exist (in the case of mushe training data)
+            if os.path.exists(train_path + '.gen.bin'):
+                assert 'gen' in dicts
+                train_gen = MMapIndexedDataset(train_path + '.gen')
+            else:
+                train_gen = list()
+                # train_tgt_langs = list()
+                # # Allocate a Tensor(1) for the bilingual case
+                # train_src_langs.append(torch.Tensor([dicts['gen']['src']]))
+                # train_tgt_langs.append(torch.Tensor([dicts['gen']['tgt']]))
+
+
             # check the length files if they exist
             if os.path.exists(train_path + '.src_sizes.npy'):
                 train_src_sizes = np.load(train_path + '.src_sizes.npy')
@@ -205,6 +218,7 @@ def main():
                                           train_tgt,
                                           train_src_sizes, train_tgt_sizes,
                                           train_src_langs, train_tgt_langs,
+                                          gen=train_gen,
                                           batch_size_words=opt.batch_size_words,
                                           data_type=data_type, sorting=True,
                                           batch_size_sents=opt.batch_size_sents,
@@ -215,6 +229,7 @@ def main():
                                           cleaning=True, verbose=True,
                                           num_split=len(opt.gpus),
                                           token_level_lang=opt.language_classifier_tok,
+                                          token_level_gen=opt.gender_classifier_tok,
                                           bidirectional=opt.bidirectional_translation,
                                           en_id=opt.en_id)
             else:
@@ -246,6 +261,14 @@ def main():
                 valid_src_langs.append(torch.Tensor([dicts['langs']['src']]))
                 valid_tgt_langs.append(torch.Tensor([dicts['langs']['tgt']]))
 
+
+            if os.path.exists(valid_path + '.gen.bin'):
+                assert 'gen' in dicts
+                valid_gen = MMapIndexedDataset(valid_path + '.gen')
+            else:
+                valid_gen = list()
+
+
             # check the length files if they exist
             if os.path.exists(valid_path + '.src_sizes.npy'):
                 valid_src_sizes = np.load(valid_path + '.src_sizes.npy')
@@ -257,6 +280,7 @@ def main():
                 valid_data = onmt.Dataset(valid_src, valid_tgt,
                                           valid_src_sizes, valid_tgt_sizes,
                                           valid_src_langs, valid_tgt_langs,
+                                          valid_gen,
                                           batch_size_words=opt.batch_size_words,
                                           data_type=data_type, sorting=True,
                                           batch_size_sents=opt.batch_size_sents,
@@ -426,12 +450,14 @@ def main():
         checkpoint = torch.load(opt.load_from, map_location=lambda storage, loc: storage)
         print("* Loading dictionaries from the checkpoint")
         dicts = checkpoint['dicts']
+        print(dicts.keys())
 
         if opt.load_vocab_from_data is not None:  # only useful when vocab is expanded
             vocab_data = torch.load(opt.load_vocab_from_data, map_location=lambda storage, loc: storage)
+            print(vocab_data.keys())
             # TODO: OVERWRITE src and tgt?
-            dicts['src'] = vocab_data['dicts']['src']
-            dicts['tgt'] = vocab_data['dicts']['tgt']
+            dicts['src'] = vocab_data['src']
+            dicts['tgt'] = vocab_data['tgt']
             # for tok in vocab_data['dicts']['src'].labelToIdx:  # toks in new language
             #     dicts['src'].add(tok)
             # for tok in vocab_data['dicts']['tgt'].labelToIdx:  # toks new language
@@ -439,12 +465,22 @@ def main():
 
             # TODO: doesn't really hurt supervised directions when re-initializing this?
              # if len(vocab_data['dicts']['langs']) > dicts['langs']:
-            for lan in vocab_data['dicts']['langs']:  # new language
+            for lan in vocab_data['langs']:  # new language
                 if lan not in dicts['langs']:
                     dicts['langs'][lan] = len(dicts['langs'])
                     print(' *** added language dict {0} to {1}'.format(lan, dicts['langs']))
             # else::q
             # dicts['langs'] = vocab_data['dicts']['langs']
+
+            # print(dicts['langs']['cs'])
+            # print(vocab_data['gen'])
+            # if 'gen' not in dicts:
+            #     dicts['gen'] = list()
+            # for lan in vocab_data['gen']:
+            #     print(lan)
+            #     if lan not in dicts['gen']:
+            #         dicts['gen'][lan] = len(dicts['gen'])
+            #         print(' *** added gender dict {0} to {1}'.format(gen, dicts['gen']))
 
     else:
         dicts['tgt'].patch(opt.patch_vocab_multiplier)
@@ -472,6 +508,7 @@ def main():
         #                                       label_smoothing=opt.label_smoothing,
         #                                       ctc_weight=opt.ctc_loss)
         else:
+            print("TODO: loss with gender classifier, dicts['tgt'].size(): ", dicts['tgt'].size())
             loss_function = NMTLossFunc(opt.model_size, dicts['tgt'].size(),
                                         label_smoothing=opt.label_smoothing,
                                         mirror=opt.mirror_loss)
@@ -499,6 +536,9 @@ def main():
             aux_loss_function = CosineEncoderLoss(input_type=sim_loss_input_type, weight=aux_loss_weight)
         else:
             raise NotImplementedError
+
+    # elif opt.gender_classifier:
+    #     aux_loss_function = CrossEntropyLossBase(output_size=3, label_smoothing=opt.label_smoothing)
     else:
         aux_loss_function = None
 
@@ -508,7 +548,9 @@ def main():
     if len(opt.gpus) > 1 or opt.virtual_gpu > 1:
         raise NotImplementedError("Multi-GPU training is not supported at the moment.")
     else:
-        if not opt.adversarial_classifier:
+        if opt.gender_classifier:
+            trainer = XEGenderTrainer(model, loss_function, train_data, valid_data, dicts, opt)
+        elif not opt.adversarial_classifier:
             trainer = XETrainer(model, loss_function, train_data, valid_data, dicts, opt, True, aux_loss_function)
         else:
             trainer = XEAdversarialTrainer(model, loss_function, train_data, valid_data, dicts, opt)

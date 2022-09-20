@@ -1954,12 +1954,17 @@ def main_mustshe():
         "twowayDE.ADV": "baseline_DE_ADV_2",
         "twowayDE.ADV.r32.q": "residual_DE_ADV_2",
 
+<<<<<<< Updated upstream
         "twoway.new.ADV": "baseline_EN_ADV_3",
         "twowayES.new.ADV": "baseline_ES_ADV_3",
         "twowayDE.new.ADV": "baseline_DE_ADV_3",
         "twoway.new.ADV.r32.q": "residual_EN_ADV_3",
         "twowayES.new.ADV.r32.q": "residual_ES_ADV_3",
         "twowayDE.new.ADV.r32.q": "residual_DE_ADV_3",
+=======
+        "twowayES.new.ADV": "baseline_ES_ADV_3",
+        "twowayDE.new.ADV": "baseline_DE_ADV_3",
+>>>>>>> Stashed changes
     }
 
     # (2) BLEU

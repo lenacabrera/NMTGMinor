@@ -550,11 +550,11 @@ def main():
 
 
         # gender label preparation
-        dicts['gender'] = dict()
+        dicts['gen'] = dict()
         label_files = opt.train_src_label.split("|")
         for src_l, label_file in zip(list(set(src_langs)), label_files):
             labels = np.loadtxt(label_file, comments="#", delimiter="\n", unpack=False)
-            dicts['gender'][src_l] = [torch.Tensor([l]) for l in list(labels)]
+            dicts['gen'][src_l] = [torch.Tensor([l]) for l in list(labels)]
             
 
         train = dict()
@@ -590,7 +590,7 @@ def main():
                 
                 # each sample will have its corresponding (sentence) gender label
                 if n_samples > 0:
-                    gen_data = dicts['gender'][src_lang]
+                    gen_data = dicts['gen'][src_lang]
                 else:
                     gen_data = []
 
@@ -621,11 +621,11 @@ def main():
 
 
         # gender label preparation
-        dicts['gender'] = dict()
+        dicts['gen'] = dict()
         label_files = opt.valid_src_label.split("|")
         for src_l, label_file in zip(list(set(src_langs)), label_files):
             labels = np.loadtxt(label_file, comments="#", delimiter="\n", unpack=False)
-            dicts['gender'][src_l] = [torch.Tensor([l]) for l in list(labels)]
+            dicts['gen'][src_l] = [torch.Tensor([l]) for l in list(labels)]
 
 
         valid = dict()
@@ -661,7 +661,7 @@ def main():
 
                 # each sample will have its corresponding (sentence) gender label
                 if n_samples > 0:
-                    gen_data = dicts['gender'][src_lang]
+                    gen_data = dicts['gen'][src_lang]
                 else:
                     gen_data = []
 

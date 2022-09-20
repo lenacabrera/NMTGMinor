@@ -124,8 +124,41 @@ if [ ! -z "$QUERY" ]; then
 fi
 
 # magic_str=$magic_str" -adversarial_classifier"
+# magic_str=$magic_str" -language_classifier"
+# magic_str=$magic_str" -language_classifier_tok"
+# magic_str=$magic_str" -num_classifier_languages=10"
+
+# magic_str=$magic_str" -adversarial_classifier"
 magic_str=$magic_str" -gender_classifier"
 magic_str=$magic_str" -gender_classifier_tok"
+magic_str=$magic_str" -gender_token_classifier_at=-1" # -1
+magic_str=$magic_str" -adversarial_classifier_start_from=0" # -1
+magic_str=$magic_str" -gender_classifier_start_from=0" # -1
+
+magic_str=$magic_str" -reset_optim"
+
+batch_size_mulitplier=2 # 8
+batch_size_update=245 # 24568
+batch_size=100 # 9999
+batch_size_words=36 # 3584
+BATCH_SIZE=$batch_size_words
+
+gender_mid_layer_size=32 # 128
+
+# # --> orig params below:
+# batch_size_mulitplier=8
+# batch_size_update=24568
+# batch_size=9999
+# batch_size_words=3584
+# # $BATCH_SIZE=batch_size_words
+# gender_mid_layer_size=128
+
+# # # aux loss
+# -bidirectional_translation \
+# -sim_loss_type 11 \
+# -aux_loss_weight 0.1 \
+# -aux_loss_start_from 0 \
+
 
 # echo $magic_str
 
@@ -141,9 +174,9 @@ python3 -u $NMTDIR/train.py \
         -save_model $BASEDIR/model/${name}/checkpoints/model \
         -model $TRANSFORMER \
         -batch_size_words $BATCH_SIZE \
-        -batch_size_update 24568 \
-        -batch_size_sents 9999 \
-        -batch_size_multiplier 8 \
+        -batch_size_update $batch_size_update \
+        -batch_size_sents $batch_size \
+        -batch_size_multiplier $batch_size_mulitplier \
         -checkpointing 0 \
         -layers $LAYER \
         -encoder_layers $ENC_LAYER \
@@ -168,6 +201,9 @@ python3 -u $NMTDIR/train.py \
         -gender_mid_layer_size 128 \
         $magic_str $gpu_string_train &> $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log
         # $magic_str $gpu_string_train &> $BASEDIR/model/${name}/{$DATE_AND_TIME}_train.log
+
+# -load_vocab_from_data $BASEDIR/model/${name}/train.dict.pt \
+
 
 # load_from
 # twoway -> model_ppl_4.960131_e64.00.pt

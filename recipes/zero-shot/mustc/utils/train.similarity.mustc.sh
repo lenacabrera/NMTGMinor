@@ -169,7 +169,7 @@ python3 -u $NMTDIR/train.py \
         -sim_loss_type 11 \
         -aux_loss_weight 0.1 \
         -aux_loss_start_from 0 \
-        -load_from $BASEDIR/model/${name}/checkpoints/model_ppl_6.183620_e64.00.pt \
+        -load_from $BASEDIR/model/${name}/checkpoints/model_ppl_6.937025_e64.00.pt \
         $magic_str $gpu_string_train &> $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log
 
 # twoway -> model_ppl_4.960131_e64.00.pt

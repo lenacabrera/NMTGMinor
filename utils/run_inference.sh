@@ -40,6 +40,10 @@ residual_DE_ADV_2="twowayDE.ADV.r32.q"
 baseline_EN_ADV_3="twoway.new.ADV"
 baseline_ES_ADV_3="twowayES.new.ADV"
 baseline_DE_ADV_3="twowayDE.new.ADV"
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 residual_EN_ADV_3="twoway.new.ADV.r32.q"
 residual_ES_ADV_3="twowayES.new.ADV.r32.q"
 residual_DE_ADV_3="twowayDE.new.ADV.r32.q"
@@ -82,9 +86,16 @@ train_twoway_final_b_en="${baseline_EN} ${baseline_EN_AUX} ${baseline_EN_ADV_3}"
 train_twoway_final_r_en="${residual_EN} ${residual_EN_AUX} ${residual_EN_ADV_3}"
 train_twoway_final_en="${train_twoway_final_b_en} ${train_twoway_final_r_en}"
 
+<<<<<<< Updated upstream
 train_twoway_final_b_es="${baseline_ES_2} ${baseline_ES_AUX_2} ${baseline_ES_ADV_3}"
 train_twoway_final_r_es="${residual_ES_2} ${residual_ES_AUX_2} ${residual_ES_ADV_3}"
 train_twoway_final_es="${train_twoway_final_b_es} ${train_twoway_final_r_es}"
+=======
+# train_sets="${train_sets_en} ${train_sets_es} ${train_sets_de}"
+# train_sets="${baseline_DE_AUX_2}"
+train_sets="${baseline_ES_ADV_3} ${baseline_DE_ADV_3} ${residual_ES_ADV_3} ${residual_DE_ADV_3}" # ${baseline_EN_AUX} ${residual_EN_AUX}
+echo $train_sets
+>>>>>>> Stashed changes
 
 train_twoway_final_b_de="${baseline_DE_2} ${baseline_DE_AUX_2} ${baseline_DE_ADV_3}"
 train_twoway_final_r_de="${residual_DE_2} ${residual_DE_AUX_2} ${residual_DE_ADV_3}"

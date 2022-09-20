@@ -63,6 +63,7 @@ residual_DE_AUX_2="twowayDE.SIM.r32.q"
 baseline_DE_ADV_2="twowayDE.ADV"
 residual_DE_ADV_2="twowayDE.ADV.r32.q"
 
+<<<<<<< Updated upstream
 baseline_EN_ADV_3="twoway.new.ADV"
 baseline_ES_ADV_3="twowayES.new.ADV"
 baseline_DE_ADV_3="twowayDE.new.ADV"
@@ -76,11 +77,19 @@ residual_DE_ADV_3="twowayDE.new.ADV.r32.q"
 train_sets_en="${baseline_EN} ${residual_EN} ${baseline_EN_AUX} ${residual_EN_AUX} ${baseline_EN_ADV_3} ${residual_EN_ADV_3}"
 train_sets_es="${baseline_ES_2} ${residual_ES_2} ${baseline_ES_AUX_2} ${residual_ES_AUX_2} ${baseline_ES_ADV_3} ${residual_ES_ADV_3}"
 train_sets_de="${baseline_DE_2} ${residual_DE_2} ${baseline_DE_AUX_2} ${residual_DE_AUX_2} ${baseline_DE_ADV_3} ${residual_DE_ADV_3}"
+=======
+baseline_ES_ADV_3="twowayES.new.ADV"
+baseline_DE_ADV_3="twowayDE.new.ADV"
+
+train_sets_en="${baseline_EN} ${residual_EN} ${baseline_EN_AUX} ${residual_EN_AUX} ${baseline_EN_ADV} ${residual_EN_ADV}"
+train_sets_es="${baseline_ES_2} ${residual_ES_2} ${baseline_ES_AUX_2} ${residual_ES_AUX_2} ${baseline_ES_ADV_2} ${residual_ES_ADV_2}"
+train_sets_de="${baseline_DE_2} ${residual_DE_2} ${baseline_DE_AUX_2} ${residual_DE_AUX_2} ${baseline_DE_ADV_2} ${residual_DE_ADV_2}"
+>>>>>>> Stashed changes
 train_sets="${train_sets_en} ${train_sets_es} ${train_sets_de}"
 # train_sets="${baseline_EN_ADV_3} ${baseline_ES_ADV_3} ${baseline_DE_ADV_3} ${residual_EN_ADV_3} ${residual_ES_ADV_3} ${residual_DE_ADV_3}"
 
 # train_sets="twoway.r32.q twoway.r32.q.new multiwayES multiwayES.r32.q multiwayDE multiwayDE.r32.q multiwayESFRIT multiwayESFRIT.r32.q.new multiwayES.SIM multiwayES.r32.q.SIM multiwayES.ADV multiwayES.ADV.r32.q twoway.r32.q.SIM twoway.new.SIM.r32.q twoway.r32.q.ADV twoway.r32.q.new.ADV twowayES twowayDE"
-# train_sets="twowayES twowayES.r32.q"
+train_sets="${baseline_ES_ADV_3}" # ${baseline_DE_ADV_3}"
 
 # mustshe
 for train_set in $train_sets; do

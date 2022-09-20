@@ -92,11 +92,12 @@ def merge_data(data, align_right=False, type='text', augmenter=None, upsampling=
 
 
 def collect_fn(src_data, tgt_data,
-               src_lang_data, tgt_lang_data,
+               src_lang_data, tgt_lang_data, 
+               gen_data,
                src_align_right, tgt_align_right,
                src_type='text',
                augmenter=None, upsampling=False,
-               bilingual=False, token_level_lang=False, vocab_mask=None, bidirectional=False, multidataset=False, en_id=None):
+               bilingual=False, token_level_lang=False, token_level_gen=False, vocab_mask=None, bidirectional=False, multidataset=False, en_id=None):
 
     tensors = dict()
     if src_data is not None:
@@ -195,6 +196,31 @@ def collect_fn(src_data, tgt_data,
                 out_tensor[torch.logical_and(~en_idx, out_tensor != onmt.constants.PAD)] = 2    # non-English has label 2
 
             tensors['targets_target_lang'] = out_tensor
+
+
+    if gen_data is not None:
+        tensors['gen'] = torch.cat(gen_data).long()
+
+        if token_level_gen and bidirectional:  # prepare token-level language prediction targets, only do this under bidirectional translation
+            if multidataset:
+                # In case of multi dataset, there's only one language per batch
+                tensors['gen'] = tensors['gen'].repeat(tensors['source'].shape[1])
+
+            sl_ = tensors['gen']  # sl_.shape[0]
+            # out_dims = (max(tensors['tgt_lengths']).item(), sl_.shape[0])  # T, B
+            out_dims = (max(src_lengths), sl_.shape[0])
+            out_tensor = sl_.data.new(*out_dims).fill_(onmt.constants.PAD)
+            for i, v in enumerate(sl_):
+                # lan ID starts with 0, but pred label values should start with 1 (due to padding)
+                out_tensor[:(src_lengths[i]), i] = v + 1
+
+            # # Convert labels to two classes e.g. en vs non-en
+            # if en_id:
+            #     en_idx = out_tensor != en_id
+            #     out_tensor[en_idx] = 1  # English has label 1
+            #     out_tensor[torch.logical_and(~en_idx, out_tensor != onmt.constants.PAD)] = 2    # non-English has label 2
+
+            tensors['targets_source_gen'] = out_tensor
 
     tensors['vocab_mask'] = vocab_mask
 
@@ -447,6 +473,7 @@ class Dataset(torch.utils.data.Dataset):
     def __init__(self, src_data, tgt_data,
                  src_sizes=None, tgt_sizes=None,
                  src_langs=None, tgt_langs=None,
+                 gen=None,
                  batch_size_words=16384,
                  data_type="text", batch_size_sents=128,
                  multiplier=1, sorting=False,
@@ -455,6 +482,7 @@ class Dataset(torch.utils.data.Dataset):
                  verbose=False, cleaning=False, debug=False,
                  num_split=1,
                  token_level_lang=False,
+                 token_level_gen=False,
                  bidirectional=False,
                  multidataset=False,
                  en_id=None,
@@ -478,6 +506,7 @@ class Dataset(torch.utils.data.Dataset):
         P P D D D D D D
         P P P P P D D D
         P P P D D D D D
+        This can affect positional encoding (whose implementation is not consistent w.r.t padding)
         This can affect positional encoding (whose implementation is not consistent w.r.t padding)
         For models with absolute positional encoding, src and tgt should be aligned left (This is default)
         For models with relative positional encoding, src should be right and tgt should be left
@@ -575,6 +604,9 @@ class Dataset(torch.utils.data.Dataset):
         # Processing language ids
         self.src_langs = src_langs
         self.tgt_langs = tgt_langs
+
+        # gender ids
+        self.gen = gen
 
         if self.src_langs is not None and self.tgt_langs is not None:
             assert (len(src_langs) == len(tgt_langs))
@@ -687,6 +719,7 @@ class Dataset(torch.utils.data.Dataset):
         #     self.augmenter = None
 
         self.token_level_lang = token_level_lang
+        self.token_level_gen = token_level_gen
         self.bidirectional_translation = bidirectional
         self.multidataset = multidataset
         self.en_id = en_id
@@ -789,6 +822,8 @@ class Dataset(torch.utils.data.Dataset):
                 src_lang = self.src_langs[index]
             if self.tgt_langs is not None:
                 tgt_lang = self.tgt_langs[index]
+            if self.gen is not None and len(self.gen) > 0:
+                gen = self.gen[index]
 
         # move augmenter here?
 
@@ -796,8 +831,11 @@ class Dataset(torch.utils.data.Dataset):
             'src': self.src[index] if self.src is not None else None,
             'tgt': self.tgt[index] if self.tgt is not None else None,
             'src_lang': src_lang,
-            'tgt_lang': tgt_lang
+            'tgt_lang': tgt_lang,
         }
+
+        if self.gen is not None and len(self.gen) > 0:
+            sample['gen'] = gen
 
         return sample
 
@@ -859,6 +897,7 @@ class Dataset(torch.utils.data.Dataset):
 
         src_lang_data = None
         tgt_lang_data = None
+        gen_data = None
 
         if self.bilingual:
             if self.src_langs is not None:
@@ -870,13 +909,17 @@ class Dataset(torch.utils.data.Dataset):
                 src_lang_data = [self.src_langs[i] for i in batch_ids]
             if self.tgt_langs is not None:
                 tgt_lang_data = [self.tgt_langs[i] for i in batch_ids]
+            if self.gen is not None and len(self.gen) > 0:
+                gen_data = [self.gen[i] for i in batch_ids]
 
         batch = rewrap(collect_fn(src_data, tgt_data=tgt_data,
                                   src_lang_data=src_lang_data, tgt_lang_data=tgt_lang_data,
+                                  gen_data=gen_data,
                                   src_align_right=self.src_align_right, tgt_align_right=self.tgt_align_right,
                                   src_type=self._type,
                                   augmenter=self.augmenter, upsampling=self.upsampling, vocab_mask=self.vocab_mask,
                                   token_level_lang=self.token_level_lang,
+                                  token_level_gen=self.token_level_gen,
                                   bidirectional=self.bidirectional_translation,
                                   multidataset=self.multidataset,
                                   en_id=self.en_id)
@@ -900,6 +943,7 @@ class Dataset(torch.utils.data.Dataset):
 
             src_data, tgt_data = None, None
             src_lang_data, tgt_lang_data = None, None
+            src_gen_data = None
 
             if self.src:
                 src_data = [sample['src'] for sample in samples]
@@ -907,23 +951,32 @@ class Dataset(torch.utils.data.Dataset):
             if self.tgt:
                 tgt_data = [sample['tgt'] for sample in samples]
 
+            if self.gen:
+                gen_data = [sample['gen'] for sample in samples]
+
             if self.bilingual:
                 if self.src_langs is not None:
                     src_lang_data = [self.src_langs[0]]  # should be a tensor [0]
                 if self.tgt_langs is not None:
                     tgt_lang_data = [self.tgt_langs[0]]  # should be a tensor [1]
+                if self.gen is not None:
+                    tgt_lang_data = [self.gen[0]] 
             else:
                 if self.src_langs is not None:
                     src_lang_data = [sample['src_lang'] for sample in samples]  # should be a tensor [0]
                 if self.tgt_langs is not None:
                     tgt_lang_data = [sample['tgt_lang'] for sample in samples]  # should be a tensor [1]
+                if self.gen is not None and len(self.gen) > 0:
+                    src_gen_data = [sample['gen'] for sample in samples]
 
             batch = collect_fn(src_data, tgt_data=tgt_data,
                                src_lang_data=src_lang_data, tgt_lang_data=tgt_lang_data,
+                               gen_data=src_gen_data,
                                src_align_right=self.src_align_right, tgt_align_right=self.tgt_align_right,
                                src_type=self._type,
                                augmenter=self.augmenter, upsampling=self.upsampling, vocab_mask=self.vocab_mask,
                                token_level_lang=self.token_level_lang,
+                               token_level_gen=self.token_level_gen,
                                bidirectional=self.bidirectional_translation,
                                multidataset=self.multidataset,
                                en_id=self.en_id)
