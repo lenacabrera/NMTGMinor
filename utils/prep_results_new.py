@@ -1953,6 +1953,13 @@ def main_mustshe():
         "twowayDE.SIM.r32.q": "residual_DE_AUX_2",
         "twowayDE.ADV": "baseline_DE_ADV_2",
         "twowayDE.ADV.r32.q": "residual_DE_ADV_2",
+
+        "twoway.new.ADV": "baseline_EN_ADV_3",
+        "twowayES.new.ADV": "baseline_ES_ADV_3",
+        "twowayDE.new.ADV": "baseline_DE_ADV_3",
+        "twoway.new.ADV.r32.q": "residual_EN_ADV_3",
+        "twowayES.new.ADV.r32.q": "residual_ES_ADV_3",
+        "twowayDE.new.ADV.r32.q": "residual_DE_ADV_3",
     }
 
     # (2) BLEU
