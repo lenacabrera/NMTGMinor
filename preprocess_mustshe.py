@@ -53,11 +53,14 @@ parser.add_argument('-valid_src', required=True,
 parser.add_argument('-valid_tgt', required=True,
                     help="Path to the validation target data")
 
-parser.add_argument('-train_src_label', required=True,
+parser.add_argument('-train_sent_label', required=True,
                     help="Path to the training source label data")
-
-parser.add_argument('-valid_src_label', required=True,
+parser.add_argument('-valid_sent_label', required=True,
+                    help="Path to the valid source label data")
+parser.add_argument('-train_word_label', required=True,
                     help="Path to the training source label data")
+parser.add_argument('-valid_word_label', required=True,
+                    help="Path to the valid source label data")
 
 parser.add_argument('-train_src_lang', default="src",
                     help="Language(s) of the source sequences.")
@@ -388,8 +391,8 @@ def main():
     print('***', src_train_files, src_langs)
     print('***', tgt_train_files, tgt_langs)
 
-    train_labels_files = opt.train_src_label.split("|")
-    print('###', train_labels_files )
+    train_sent_labels_files = opt.train_sent_label.split("|")
+    print('###', train_sent_labels_files )
 
     start = time.time()
 
@@ -550,19 +553,28 @@ def main():
 
 
         # gender label preparation
-        dicts['gen'] = dict()
-        label_files = opt.train_src_label.split("|")
-        for src_l, label_file in zip(list(set(src_langs)), label_files):
-            labels = np.loadtxt(label_file, comments="#", delimiter="\n", unpack=False)
-            dicts['gen'][src_l] = [torch.Tensor([l]) for l in list(labels)]
-            
+        dicts['gen_sent'] = dict()
+        dicts['gen_word'] = dict()
+        sent_labels_files = opt.train_sent_label.split("|")
+        word_labels_files = opt.train_word_label.split("|")
+        for src_l, sent_label_file, word_label_file in zip(list(set(src_langs)), sent_labels_files, word_labels_files):
+            sent_labels = np.loadtxt(sent_label_file, comments="#", delimiter="\n", unpack=False)
+            w_reader = open(word_label_file, 'r')
+            word_labels = []
+            for r in w_reader:
+                w_labels = np.array([int(n) for n in r.split(" ")])
+                word_labels.append(w_labels)
+
+            dicts['gen_sent'][src_l] = [torch.Tensor([l]) for l in list(sent_labels)]
+            dicts['gen_word'][src_l] = [torch.Tensor([l]) for l in list(word_labels)]
 
         train = dict()
         train['src'], train['tgt'] = list(), list()
         train['src_sizes'], train['tgt_sizes'] = list(), list()
         train['src_lang'], train['tgt_lang'] = list(), list()
 
-        train['gen'] = list()
+        train['gen_sent'] = list()
+        train['gen_word'] = list()
 
         start = time.time()
         print('Binarizing data to train translation models...')
@@ -590,9 +602,11 @@ def main():
                 
                 # each sample will have its corresponding (sentence) gender label
                 if n_samples > 0:
-                    gen_data = dicts['gen'][src_lang]
+                    gen_data_sent = dicts['gen_sent'][src_lang]
+                    gen_data_word = dicts['gen_word'][src_lang]
                 else:
-                    gen_data = []
+                    gen_data_sent = []
+                    gen_data_word = []
 
             train['src'] += src_data
             train['tgt'] += tgt_data
@@ -600,7 +614,8 @@ def main():
             train['tgt_sizes'] += tgt_sizes
             train['src_lang'] += src_lang_data
             train['tgt_lang'] += tgt_lang_data
-            train['gen'] += gen_data
+            train['gen_sent'] += gen_data_sent
+            train['gen_word'] += gen_data_word
 
         print('Preparing validation ...')
 
@@ -621,11 +636,19 @@ def main():
 
 
         # gender label preparation
-        dicts['gen'] = dict()
-        label_files = opt.valid_src_label.split("|")
-        for src_l, label_file in zip(list(set(src_langs)), label_files):
-            labels = np.loadtxt(label_file, comments="#", delimiter="\n", unpack=False)
-            dicts['gen'][src_l] = [torch.Tensor([l]) for l in list(labels)]
+        dicts['gen_sent'] = dict()
+        dicts['gen_word'] = dict()
+        sent_labels_files = opt.valid_sent_label.split("|")
+        word_labels_files = opt.valid_word_label.split("|")
+        for src_l, sent_label_file, word_label_file in zip(list(set(src_langs)), sent_labels_files, word_labels_files):
+            sent_labels = np.loadtxt(sent_label_file, comments="#", delimiter="\n", unpack=False)
+            w_reader = open(word_label_file, 'r')
+            word_labels = []
+            for r in w_reader:
+                w_labels = np.array([int(n) for n in r.split(" ")])
+                word_labels.append(w_labels)
+            dicts['gen_sent'][src_l] = [torch.Tensor([l]) for l in list(sent_labels)]
+            dicts['gen_word'][src_l] = [torch.Tensor([l]) for l in list(word_labels)]
 
 
         valid = dict()
@@ -633,7 +656,8 @@ def main():
         valid['src_sizes'], valid['tgt_sizes'] = list(), list()
         valid['src_lang'], valid['tgt_lang'] = list(), list()
 
-        valid['gen'] = list()
+        valid['gen_sent'] = list()
+        valid['gen_word'] = list()
 
         for (src_file, tgt_file, src_lang, tgt_lang) in zip(src_input_files, tgt_input_files, src_langs, tgt_langs):
 
@@ -661,9 +685,11 @@ def main():
 
                 # each sample will have its corresponding (sentence) gender label
                 if n_samples > 0:
-                    gen_data = dicts['gen'][src_lang]
+                    gen_data_sent = dicts['gen_sent'][src_lang]
+                    gen_data_word = dicts['gen_word'][src_lang]
                 else:
-                    gen_data = []
+                    gen_data_sent = []
+                    gen_data_word = []
 
             valid['src'] += src_data
             valid['tgt'] += tgt_data
@@ -671,7 +697,8 @@ def main():
             valid['tgt_sizes'] += tgt_sizes
             valid['src_lang'] += src_lang_data
             valid['tgt_lang'] += tgt_lang_data
-            valid['gen'] += gen_data
+            valid['gen_sent'] += gen_data_sent
+            valid['gen_word'] += gen_data_word
 
         elapse = str(datetime.timedelta(seconds=int(time.time() - start)))
         print("Binarization finished after %s" % elapse)
@@ -705,7 +732,7 @@ def main():
         torch.save(dicts, opt.save_data + '.dict.pt')
 
         # binarize the training set first
-        for set_ in ['src', 'tgt', 'src_lang', 'tgt_lang', 'gen']:
+        for set_ in ['src', 'tgt', 'src_lang', 'tgt_lang', 'gen_sent', 'gen_word']:
             if train[set_] is None:
                 continue
 

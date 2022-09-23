@@ -18,9 +18,13 @@ mkdir -p $TOKDIR
 mkdir -p $TOKDIR/train
 mkdir -p $TOKDIR/train/label
 mkdir -p $TOKDIR/train/label/sent
+mkdir -p $TOKDIR/train/label/word
+mkdir -p $TOKDIR/train/label/tok
 mkdir -p $TOKDIR/valid
 mkdir -p $TOKDIR/valid/label
 mkdir -p $TOKDIR/valid/label/sent
+mkdir -p $TOKDIR/valid/label/word
+mkdir -p $TOKDIR/valid/label/tok
 
 
 echo "Prepare raw data..."
@@ -48,7 +52,10 @@ for dataset in train valid; do
                         fi
                 done
                 if [ "$sl" != "en" ]; then
+                        # sentence-level label
                         cp $DATADIR/mustshe/raw/$dataset/all/gen_label/sent/$sl.s $TOKDIR/$dataset/label/sent/$sl.s
+                        # word-level label
+                        cp $DATADIR/mustshe/raw/$dataset/all/gen_label/word/$sl.s $TOKDIR/$dataset/label/word/$sl.s
                 fi
         done
 done
@@ -60,6 +67,24 @@ for dataset in train valid; do
                 if [ "$sl" == "en" ]; then
                         echo "*** remove ***" $f
                         rm $f
+                fi
+                # else
+                #      python3 $NMTDIR/utils/align_tokens_w_word_labels.py \
+                #      -text_path $f \
+                #      -label_path $TOKDIR/$dataset/label/word/$sl.s
+                # fi
+        done
+done
+
+for dataset in train valid; do
+        for f in $TOKDIR/$dataset/*.s; do
+                lan="$(basename "$f")"
+                sl=${lan:0:2} 
+                if [ "$sl" != "en" ]; then
+                     python3 $NMTDIR/utils/align_tokens_w_word_labels.py \
+                     -text_path $f \
+                     -label_path $TOKDIR/$dataset/label/word/$sl.s \
+                     -out_path $TOKDIR/$dataset/label/tok/$sl.s
                 fi
         done
 done
