@@ -123,19 +123,46 @@ if [ ! -z "$QUERY" ]; then
     magic_str=$magic_str" -change_att_query $QUERY"
 fi
 
-
+# *****************************************************
+# *** training classifier for probing hidden states ***
 magic_str=$magic_str" -gender_classifier"
 magic_str=$magic_str" -gender_classifier_tok"  # -gender_classifier_tok   OR  -gender_classifier_sent
-magic_str=$magic_str" -gender_token_classifier=0" # -> 0: context, enc. output, -1: spec. enc. layer
-magic_str=$magic_str" -gender_token_classifier_at=-1"
-magic_str=$magic_str" -gender_classifier_start_from=0" # 1
+magic_str=$magic_str" -token_classifier $CLASSIFICATION_TYPE"  # --> TODO check occurrence of this param
+magic_str=$magic_str" -gender_token_classifier 0"
+magic_str=$magic_str" -gender_token_classifier_at -1" # -1: classifier input is encoder hidden states, i.e., last layer of encoder stack
+# freeze (the rest of the) models parameters
+magic_str=$magic_str" -freeze_encoder"
+magic_str=$magic_str" -freeze_decoder"
+# reset optimizer, since now the optimization task is different
+magic_str=$magic_str" -reset_optim" 
+# turn dropout off since the classifier is very parameter-light (does not really need dropout to avoid overfitting)
+magic_str=$magic_str" -dropout 0.0"
+magic_str=$magic_str" -attn_dropout 0.0"
+magic_str=$magic_str" -word_dropout 0.0"
+magic_str=$magic_str" -emb_dropout 0.0"
+# the learning rate warmup steps should be set lower (~400 instead of normal 4k or 8k), since training the classifier is pretty lightweight 
+# and we don't need to slowly warm up the LR
+WUS=400
+# 5 epochs should be enough (?)
+EPOCHS=5
+# -load_from should point to the trained model we want to analyze (e.g., the averaged model.pt or model_ppl_* checkpoint
+#   twoway      -> model_ppl_4.960131_e64.00.pt
+#   twowayES    -> model_ppl_
+#   twowayDE    -> model_ppl_
+LOAD_FROM=$BASEDIR/model/${name}/checkpoints/model_ppl_4.960131_e64.00.pt
 
-magic_str=$magic_str" -reset_optim" # TODO check
+
+# *****************************************************
+# *** training classifier in combination with model ***
+# magic_str=$magic_str"-gender_classifier_start_from 0" # 1
+# magic_str=$magic_str"-gradient_scale 0.1"
+# magic_str=$magic_str"-gender_mid_layer_size 128"
+
 
 # --> orig params below:
 batch_size_mulitplier=8
 batch_size_update=24568
-batch_size=9999s
+batch_size=9999
 batch_size_words=3584
 # $BATCH_SIZE=batch_size_words
 gender_mid_layer_size=128
@@ -149,7 +176,7 @@ gender_mid_layer_size=128
 # gender_mid_layer_size=32 # 128
 
 
-echo $magic_str
+# echo $magic_str
 
 mkdir -p $NMTDIR/../output/${name}
 mkdir -p $BASEDIR/model/${name}/checkpoints/
@@ -177,6 +204,7 @@ python3 -u $NMTDIR/train.py \
         $optim_str \
         -learning_rate $LR \
         -normalize_gradient \
+        -warmup_steps $WUS \
         -tie_weights \
         -seed $SEED \
         -log_interval 1000 \
@@ -184,16 +212,8 @@ python3 -u $NMTDIR/train.py \
         -join_embedding \
         -data_format mmem \
         -update_frequency -1 \
-        -load_from $BASEDIR/model/${name}/checkpoints/model_ppl_4.960131_e64.00.pt \
-        -gender_token_classifier $CLASSIFICATION_TYPE \
-        -gradient_scale 0.1 \
-        -gender_mid_layer_size 128 \
+        -load_from $LOAD_FROM \
         $magic_str $gpu_string_train &> $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log
-
-# load_from
-# twoway -> model_ppl_4.960131_e64.00.pt
-# twowayES -> model_ppl_
-# twowayDE -> model_ppl_
 
 cp $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log $BASEDIR/model/${name}/${DATE_AND_TIME}_train.log
 checkpoints=""
