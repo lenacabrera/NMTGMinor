@@ -323,6 +323,8 @@ def make_parser(parser):
                         help='Whether to use a gender classifier')
     parser.add_argument('-gender_classifier_tok', action='store_true',
                         help='Whether to use a gender classifier (tok level)')
+    parser.add_argument('-gender_classifier_sent', action='store_true',
+                        help='Whether to use a gender classifier (sentence level)')
 
     parser.add_argument('-gender_mid_layer_size', type=int, default=0,
                         help='If > 0, add aother FC layer for language classifier of this size.')
@@ -333,7 +335,7 @@ def make_parser(parser):
                         help='Where to do token-level classification. 1 (1st)|-1 (last)|0 (all)|None')
     parser.add_argument('-gender_token_classifier', type=int, default=None,
                         help='Whether to use a token classifier on top of encoder states. '
-                             '1: classify vocabulary ID, 2: classify position ID, 3: classify positional encoding')
+                             '0: ')
 
     parser.add_argument('-gender_classifier_start_from', type=int, default=0,
                     help='From which epoch will the gender classifier start')
@@ -468,11 +470,17 @@ def backward_compatible(opt):
     if not hasattr(opt, 'token_classifier'):
         opt.token_classifier = None
 
-    if not hasattr(opt, 'gender_token_classifier'):
-        opt.gender_token_classifier = None
+    if not hasattr(opt, 'gender_classifier_tok'):
+        opt.gender_classifier_tok = None
+
+    if not hasattr(opt, 'gender_classifier_sent'):
+        opt.gender_classifier_sent = None
 
     if not hasattr(opt, 'token_classifier_at'):
         opt.token_classifier_at = None
+
+    if not hasattr(opt, 'gender_token_classifier'):
+        opt.gender_token_classifier_at = None
 
     if not hasattr(opt, 'gender_token_classifier_at'):
         opt.gender_token_classifier_at = None
