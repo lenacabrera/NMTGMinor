@@ -84,8 +84,13 @@ def build_tm_model(opt, dicts):
     if opt.gender_classifier:
         gender_mid_layer_size = opt.gender_mid_layer_size
 
-        gender_output_size = 2 # TODO 3 + 1 b/c of padding?
-        opt.gender_token_classifier = 0
+        if opt.gender_classifier_sent:
+            gender_output_size = 2
+        elif opt.gender_classifier_tok:
+            gender_output_size = 4 # TODO lena, 3 vs. 4? (4 = 3 + 1 bc of padding)
+        else:
+            raise NotImplementedError
+        print("(model_factory.py) gender_output_size: ", gender_output_size)
 
         if opt.gender_token_classifier_at is not None and opt.gender_token_classifier_at != -1:
             gender_classifier_input_name = 'mid_layer_output'  # specified encoder layer
