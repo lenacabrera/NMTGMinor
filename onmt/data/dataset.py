@@ -197,30 +197,22 @@ def collect_fn(src_data, tgt_data,
 
             tensors['targets_target_lang'] = out_tensor
 
-
     if gen_data is not None:
-        tensors['gen'] = torch.cat(gen_data).long()
-
-        if token_level_gen and bidirectional:  # prepare token-level language prediction targets, only do this under bidirectional translation
-            if multidataset:
-                # In case of multi dataset, there's only one language per batch
-                tensors['gen'] = tensors['gen'].repeat(tensors['source'].shape[1])
-
-            sl_ = tensors['gen']  # sl_.shape[0]
-            # out_dims = (max(tensors['tgt_lengths']).item(), sl_.shape[0])  # T, B
-            out_dims = (max(src_lengths), sl_.shape[0])
-            out_tensor = sl_.data.new(*out_dims).fill_(onmt.constants.PAD)
-            for i, v in enumerate(sl_):
-                # lan ID starts with 0, but pred label values should start with 1 (due to padding)
-                out_tensor[:(src_lengths[i]), i] = v + 1
-
-            # # Convert labels to two classes e.g. en vs non-en
-            # if en_id:
-            #     en_idx = out_tensor != en_id
-            #     out_tensor[en_idx] = 1  # English has label 1
-            #     out_tensor[torch.logical_and(~en_idx, out_tensor != onmt.constants.PAD)] = 2    # non-English has label 2
-
-            tensors['targets_source_gen'] = out_tensor
+        if not token_level_gen:           
+            # combine all sentence labels.. # TODO, lena
+            tensors['gen'] = torch.cat(gen_data).long()  # concat gender labels of entire batch
+        else:
+            tensors['gen'] = gen_data
+            out_tensors = []
+            max_seq_len = max(src_lengths).item()
+            for i, t in enumerate(tensors['gen']):
+                curr_seq_len = len(t)
+                out_dims = (max_seq_len, 1)  # T, B
+                out_tensor = t.data.new(*out_dims).fill_(onmt.constants.PAD)
+                for j, v in enumerate(tensors['gen'][i]):
+                    out_tensor[max_seq_len - curr_seq_len + j, 0] = v + 1
+                out_tensors.append(out_tensor)
+            tensors['gen'] = torch.squeeze(torch.stack(out_tensors)).T
 
     tensors['vocab_mask'] = vocab_mask
 
@@ -822,20 +814,16 @@ class Dataset(torch.utils.data.Dataset):
                 src_lang = self.src_langs[index]
             if self.tgt_langs is not None:
                 tgt_lang = self.tgt_langs[index]
-            if self.gen is not None and len(self.gen) > 0:
-                gen = self.gen[index]
 
         # move augmenter here?
 
         sample = {
             'src': self.src[index] if self.src is not None else None,
             'tgt': self.tgt[index] if self.tgt is not None else None,
+            'gen': self.gen[index] if self.gen is not None else None,
             'src_lang': src_lang,
             'tgt_lang': tgt_lang,
         }
-
-        if self.gen is not None and len(self.gen) > 0:
-            sample['gen'] = gen
 
         return sample
 
@@ -895,9 +883,13 @@ class Dataset(torch.utils.data.Dataset):
         else:
             tgt_data = None
 
+        if self.gen:
+            gen_data = [self.gen[i] for i in batch_ids]
+        else:
+            gen_data = None
+
         src_lang_data = None
         tgt_lang_data = None
-        gen_data = None
 
         if self.bilingual:
             if self.src_langs is not None:
@@ -909,8 +901,6 @@ class Dataset(torch.utils.data.Dataset):
                 src_lang_data = [self.src_langs[i] for i in batch_ids]
             if self.tgt_langs is not None:
                 tgt_lang_data = [self.tgt_langs[i] for i in batch_ids]
-            if self.gen is not None and len(self.gen) > 0:
-                gen_data = [self.gen[i] for i in batch_ids]
 
         batch = rewrap(collect_fn(src_data, tgt_data=tgt_data,
                                   src_lang_data=src_lang_data, tgt_lang_data=tgt_lang_data,
@@ -941,9 +931,8 @@ class Dataset(torch.utils.data.Dataset):
 
         for samples in sample_list:
 
-            src_data, tgt_data = None, None
+            src_data, tgt_data, gen_data = None, None, None
             src_lang_data, tgt_lang_data = None, None
-            src_gen_data = None
 
             if self.src:
                 src_data = [sample['src'] for sample in samples]
@@ -959,19 +948,15 @@ class Dataset(torch.utils.data.Dataset):
                     src_lang_data = [self.src_langs[0]]  # should be a tensor [0]
                 if self.tgt_langs is not None:
                     tgt_lang_data = [self.tgt_langs[0]]  # should be a tensor [1]
-                if self.gen is not None:
-                    tgt_lang_data = [self.gen[0]] 
             else:
                 if self.src_langs is not None:
                     src_lang_data = [sample['src_lang'] for sample in samples]  # should be a tensor [0]
                 if self.tgt_langs is not None:
                     tgt_lang_data = [sample['tgt_lang'] for sample in samples]  # should be a tensor [1]
-                if self.gen is not None and len(self.gen) > 0:
-                    src_gen_data = [sample['gen'] for sample in samples]
 
             batch = collect_fn(src_data, tgt_data=tgt_data,
                                src_lang_data=src_lang_data, tgt_lang_data=tgt_lang_data,
-                               gen_data=src_gen_data,
+                               gen_data=gen_data,
                                src_align_right=self.src_align_right, tgt_align_right=self.tgt_align_right,
                                src_type=self._type,
                                augmenter=self.augmenter, upsampling=self.upsampling, vocab_mask=self.vocab_mask,
@@ -1023,8 +1008,8 @@ class Dataset(torch.utils.data.Dataset):
         return [batch]
 
     def shuffle(self):
-        data = list(zip(self.src, self.tgt))
-        self.src, self.tgt = zip(*[data[i] for i in torch.randperm(len(data))])
+        data = list(zip(self.src, self.tgt, self.gen))
+        self.src, self.tgt, self.gen = zip(*[data[i] for i in torch.randperm(len(data))])
 
     def set_index(self, iteration):
 
