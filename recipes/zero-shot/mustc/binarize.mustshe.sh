@@ -79,8 +79,8 @@ python3 $NMTDIR/preprocess_mustshe.py \
        -valid_tgt_lang $T_LAN \
        -train_sent_label `join_by '|' $DATADIR/$prepro_name/tmp/${model_name}.$prepro_name/label/sent/train*\.s` \
        -valid_sent_label `join_by '|' $DATADIR/$prepro_name/tmp/${model_name}.$prepro_name/label/sent/valid*\.s` \
-       -train_word_label `join_by '|' $DATADIR/$prepro_name/tmp/${model_name}.$prepro_name/label/tok/train*\.s` \
-       -valid_word_label `join_by '|' $DATADIR/$prepro_name/tmp/${model_name}.$prepro_name/label/tok/valid*\.s` \
+       -train_tok_label `join_by '|' $DATADIR/$prepro_name/tmp/${model_name}.$prepro_name/label/tok/train*\.s` \
+       -valid_tok_label `join_by '|' $DATADIR/$prepro_name/tmp/${model_name}.$prepro_name/label/tok/valid*\.s` \
        -save_data $datadir \
        -src_seq_length 512 \
        -tgt_seq_length 512 \
