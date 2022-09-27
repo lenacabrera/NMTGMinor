@@ -186,14 +186,14 @@ class BaseTrainer(object):
         if self.opt.memory_profiling:
             from pytorch_memlab import MemReporter
             reporter = MemReporter()
-
+        
         batch = self.train_data[0].get_largest_batch() if isinstance(self.train_data, list) \
             else self.train_data.get_largest_batch()
         opt = self.opt
 
         if self.cuda:
             batch.cuda(fp16=self.opt.fp16 and not self.opt.fp16_mixed)
-
+        # print("(trainer.py) self.model.train()()")
         self.model.train()
         self.model.zero_grad()
         oom = False
@@ -575,51 +575,57 @@ class XETrainer(BaseTrainer):
 
 
                 # gender classifier
-                if opt.gender_classifier and opt.gender_classifier_tok:
-                    targets_classifier = batch.get('gen') # gen
+                if opt.gender_classifier: # and opt.gender_classifier_tok:
+                    targets_classifier = batch.get('gen') 
+                    # targets_classifier = targets_classifier.view(-1, targets_classifier.size(-1)) 
+                    # targets_classifier += 1
+                    # print("(trainer.py) targets_classifier.size(): ", targets_classifier.size())
+
                     classifier_loss_dict = self.loss_function(outputs, targets=targets_classifier, model=self.model,
                                                               gen_classifier=True)
                     classifier_loss_data = classifier_loss_dict['data'] if classifier_loss_dict['data'] is not None else 0
                     total_adv_loss += classifier_loss_data
 
-                    if bidirectional_translation:
-                        # TODO lena, change
-                        # raise NotImplementedError
-                        targets_classifier_rev = batch.get('targets_source_gen') # gen
+                    # if bidirectional_translation:
+                    #     # TODO lena, change
+                    #     # raise NotImplementedError
+                    #     targets_classifier_rev = batch.get('targets_source_gen') # gen
 
-                        classifier_loss_dict = self.loss_function(outputs_rev, targets=targets_classifier_rev, model=self.model,
-                                                                  gen_classifier=True)
-                        classifier_loss_data += classifier_loss_dict['data']
-                        total_adv_loss += classifier_loss_data
+                    #     classifier_loss_dict = self.loss_function(outputs_rev, targets=targets_classifier_rev, model=self.model,
+                    #                                               gen_classifier=True)
+                    #     classifier_loss_data += classifier_loss_dict['data']
+                    #     total_adv_loss += classifier_loss_data
 
-                    if opt.gender_token_classifier is not None and report_classifier:
+                    if opt.gender_classifier is not None and report_classifier:
                         logprobs_gen = outputs['logprobs_gen']
                         # logprobs_gen = logprobs_gen.masked_fill(outputs['src_mask'].permute(2, 0, 1),
                         #                                                 onmt.constants.PAD).type_as(logprobs_gen)
                         pred = logprobs_gen  # T, B, V
+                        # print("(trainer.py) pred.size(): ", pred.size())
 
                         pred_idx = torch.argmax(pred, dim=-1).cpu()  # T, B. starts from 0
+                        # print("(trainer.py) pred_idx.size(): ", pred_idx.size())
                         correct_idx = (targets_classifier.cpu() - 1 == pred_idx) # padding not counted, since 0 - 1 would be -1
 
-                        print("predictions: ", pred_idx)
-                        print("targets: ", targets_classifier.cpu() - 1)
+                        # print("(trainer.py) --- predictions 1-5  : ", pred_idx[:5])
+                        # print("(trainer.py) --- targets 1-5      : ", (targets_classifier.cpu() - 1)[:5])
 
                         correct_predict += correct_idx.sum()
-                        total_predict += targets_classifier.size()[0]  # TODO lena now sentence level, later tok
+                        total_predict += targets_classifier.size()[0] * targets_classifier.size()[1]   # TODO lena now sentence level, later tok
                         # total_predict += (~outputs['src_mask']).sum()
 
-                        if bidirectional_translation:
-                            logprobs_gen = outputs_rev['logprobs_gen']
-                            # logprobs_gen = logprobs_gen.masked_fill(outputs_rev['src_mask'].permute(2, 0, 1),
-                            #                                         onmt.constants.PAD).type_as(logprobs_gen)
-                            pred = logprobs_gen  # T, B, V
+                        # if bidirectional_translation:
+                        #     logprobs_gen = outputs_rev['logprobs_gen']
+                        #     # logprobs_gen = logprobs_gen.masked_fill(outputs_rev['src_mask'].permute(2, 0, 1),
+                        #     #                                         onmt.constants.PAD).type_as(logprobs_gen)
+                        #     pred = logprobs_gen  # T, B, V
 
-                            pred_idx_rev = torch.argmax(pred, dim=-1).cpu()  # T, B. starts from 0
-                            correct_idx_rev = (targets_classifier_rev.cpu() - 1 == pred_idx_rev)
+                        #     pred_idx_rev = torch.argmax(pred, dim=-1).cpu()  # T, B. starts from 0
+                        #     correct_idx_rev = (targets_classifier_rev.cpu() - 1 == pred_idx_rev)
 
-                            correct_predict += correct_idx_rev.sum()
-                            total_predict += targets_classifier_rev.size()[0]  # TODO lena now sentence level, later tok
-                            # total_predict += (~outputs_rev['src_mask']).sum()
+                        #     correct_predict += correct_idx_rev.sum()
+                        #     total_predict += targets_classifier_rev.size()[0]  # TODO lena now sentence level, later tok
+                        #     # total_predict += (~outputs_rev['src_mask']).sum()
 
                         if report_cm:
                             all_cnt = []
@@ -658,11 +664,12 @@ class XETrainer(BaseTrainer):
                                     all_cnt[p-1] += pred_cnt
 
                             res_per_row = torch.stack(all_cnt, dim=0)
+                            # print("(trainer.py) res_per_row: ", res_per_row)
                             cm.index_add_(0, torch.arange(num_labels, device='cpu'), res_per_row)
                 
 
             if (opt.token_classifier is not None or opt.gender_token_classifier is not None) and report_classifier:
-                print("correct_predict, total_predict: ", correct_predict, total_predict)
+                print("(trainer.py) correct_predict, total_predict: ", correct_predict, total_predict)
                 print('Classifier accuracy', (correct_predict / total_predict).data.item())
 
                 if report_cm:
@@ -854,41 +861,49 @@ class XETrainer(BaseTrainer):
                             else:
                                 raise NotImplementedError
 
-                        outputs_rev = self.model(batch, streaming=opt.streaming, target_mask=tgt_mask,
-                                                 zero_encoder=opt.zero_encoder,
-                                                 mirror=opt.mirror_loss, streaming_state=streaming_state,
-                                                 reverse_src_tgt=True)
+                            outputs_rev = self.model(batch, streaming=opt.streaming, target_mask=tgt_mask,
+                                                    zero_encoder=opt.zero_encoder,
+                                                    mirror=opt.mirror_loss, streaming_state=streaming_state,
+                                                    reverse_src_tgt=True)
 
-                        classifier_loss_dict = self.loss_function(outputs_rev, targets=targets_classifier,
-                                                                  model=self.model, lan_classifier=True)
+                            classifier_loss_dict = self.loss_function(outputs_rev, targets=targets_classifier,
+                                                                    model=self.model, lan_classifier=True)
+                            classifier_loss = classifier_loss_dict['loss'].div(
+                                denom)  # a little trick to avoid gradient overflow with fp16
+                            classifier_loss_data += classifier_loss_dict['data']
+                            classifier_loss_data_rev += 0
+                            # calc gradient for lan classifier
+                            if self.cuda:
+                                with amp.scale_loss(classifier_loss, optimizer) as scaled_loss:
+                                    scaled_loss.backward()
+                            else:
+                                classifier_loss.backward()
+
+                    if self.opt.gender_classifier:
+                        # gender classifier
+                        targets_classifier = batch.get('gen')
+
+                        classifier_loss_dict = self.loss_function(outputs, targets=targets_classifier,
+                                                                model=self.model, gen_classifier=True)
                         classifier_loss = classifier_loss_dict['loss'].div(
                             denom)  # a little trick to avoid gradient overflow with fp16
-                        classifier_loss_data += classifier_loss_dict['data']
-                        classifier_loss_data_rev += 0
-                        # calc gradient for lan classifier
+                        classifier_loss_data = classifier_loss_dict['data']
+                        classifier_loss_data_rev = 0
+                        # calc gradient for gender classifier
                         if self.cuda:
                             with amp.scale_loss(classifier_loss, optimizer) as scaled_loss:
-                                scaled_loss.backward()
+                                scaled_loss.backward(retain_graph=self.opt.bidirectional_translation)
                         else:
-                            classifier_loss.backward()
+                            classifier_loss.backward(retain_graph=self.opt.bidirectional_translation)
 
+                        # if self.opt.bidirectional_translation:
+                        #     # gender classifier
+                        #     targets_classifier = batch.get('gen')
 
-                    # if self.opt.gender_classifier:
-                    #     # gender classifier
-                    #     targets_classifier = batch.get('gen')
-
-                    #     classifier_loss_dict = self.loss_function(outputs, targets=targets_classifier,
-                    #                                             model=self.model, gen_classifier=True)
-                    #     classifier_loss = classifier_loss_dict['loss'].div(
-                    #         denom)  # a little trick to avoid gradient overflow with fp16
-                    #     classifier_loss_data = classifier_loss_dict['data']
-                    #     classifier_loss_data_rev = 0
-                    #     # calc gradient for lan classifier
-                    #     if self.cuda:
-                    #         with amp.scale_loss(classifier_loss, optimizer) as scaled_loss:
-                    #             scaled_loss.backward(retain_graph=self.opt.bidirectional_translation)
-                    #     else:
-                    #         classifier_loss.backward(retain_graph=self.opt.bidirectional_translation)
+                            # outputs_rev = self.model(batch, streaming=opt.streaming, target_mask=tgt_mask,
+                            #                         zero_encoder=opt.zero_encoder,
+                            #                         mirror=opt.mirror_loss, streaming_state=streaming_state,
+                            #                         reverse_src_tgt=True)
 
                     #     if self.opt.bidirectional_translation:
                     #         # gender classifier
@@ -970,7 +985,7 @@ class XETrainer(BaseTrainer):
 
                     if opt.save_every > 0 and num_updates % opt.save_every == -1 % opt.save_every:
                         valid_loss, _ = self.eval(self.valid_data,
-                                                  report_classifier=self.opt.token_classifier is not None,
+                                                  report_classifier=self.opt.token_classifier is not None,  # TODO lena token_classifier, gender?
                                                   report_cm=self.opt.token_classifier == 0,
                                                   bidirectional_translation=self.opt.bidirectional_translation)
                         valid_ppl = math.exp(min(valid_loss, 100))
@@ -984,8 +999,8 @@ class XETrainer(BaseTrainer):
 
                 num_words = tgt_size
                 report_loss += loss_data
-                report_classifier_loss += classifier_loss_data if self.opt.language_classifier else 0
-                report_classifier_loss_rev += classifier_loss_data_rev if self.opt.language_classifier else 0
+                report_classifier_loss += classifier_loss_data if self.opt.language_classifier or self.opt.gender_classifier else 0
+                report_classifier_loss_rev += classifier_loss_data_rev if self.opt.language_classifier or self.opt.gender_classifier else 0
                 report_tgt_words += num_words
                 report_src_words += src_size
                 total_loss += loss_data
@@ -1075,12 +1090,12 @@ class XETrainer(BaseTrainer):
         # if opt.load_decoder_from:
         #     self.load_decoder_weight(opt.load_decoder_from)
 
-        report_classifier = opt.token_classifier is not None or opt.gender_token_classifier is not None
+        report_classifier = opt.token_classifier is not None or opt.gender_classifier is not None
         report_confusion_matrix = opt.token_classifier == 0
         # if we are on a GPU: warm up the memory allocator
         if self.cuda:
             self.warm_up()
-
+            print("(trainer.py): self.eval()")
             valid_loss, valid_adv_loss = self.eval(self.valid_data,
                                                    bidirectional_translation=self.opt.bidirectional_translation,
                                                    report_classifier=report_classifier,

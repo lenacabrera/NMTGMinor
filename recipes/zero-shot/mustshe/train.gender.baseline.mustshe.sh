@@ -2,7 +2,7 @@
 # source ./config.sh
 
 export systemName=mustshe
-export TRAIN_SET=twoway  # twoway, twowayES, twowayDE
+export TRAIN_SET=twoway  # {twoway, twowayES, twowayDE} + {.SIM, .ADV}
 
 export BASEDIR=$WORKDIR
 export LAYER=5

@@ -215,6 +215,8 @@ def collect_fn(src_data, tgt_data,
                     out_tensor[max_seq_len - curr_seq_len + j, 0] = v + 1
                 out_tensors.append(out_tensor)
             tensors['gen'] = torch.squeeze(torch.stack(out_tensors)).T
+            # print("TODO lena: check padding!!!")
+            # print("(dataset.py) tensors['gen']: ", tensors['gen'])
 
     tensors['vocab_mask'] = vocab_mask
 

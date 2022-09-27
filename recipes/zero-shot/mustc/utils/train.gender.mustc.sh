@@ -127,7 +127,7 @@ fi
 # *** training classifier for probing hidden states ***
 magic_str=$magic_str" -gender_classifier"
 magic_str=$magic_str" -gender_classifier_tok"  # -gender_classifier_tok   OR  -gender_classifier_sent
-magic_str=$magic_str" -token_classifier $CLASSIFICATION_TYPE"  # --> TODO check occurrence of this param
+# magic_str=$magic_str" -token_classifier $CLASSIFICATION_TYPE"  # --> TODO check occurrence of this param
 magic_str=$magic_str" -gender_token_classifier 0"
 magic_str=$magic_str" -gender_token_classifier_at -1" # -1: classifier input is encoder hidden states, i.e., last layer of encoder stack
 # freeze (the rest of the) models parameters
@@ -146,10 +146,7 @@ WUS=400
 # 5 epochs should be enough (?)
 EPOCHS=5
 # -load_from should point to the trained model we want to analyze (e.g., the averaged model.pt or model_ppl_* checkpoint
-#   twoway      -> model_ppl_4.960131_e64.00.pt
-#   twowayES    -> model_ppl_
-#   twowayDE    -> model_ppl_
-LOAD_FROM=$BASEDIR/model/${name}/checkpoints/model_ppl_4.960131_e64.00.pt
+LOAD_FROM=$BASEDIR/model/${name}/model_for_probing/model.pt
 
 
 # *****************************************************
@@ -216,16 +213,14 @@ python3 -u $NMTDIR/train.py \
         $magic_str $gpu_string_train &> $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log
 
 cp $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log $BASEDIR/model/${name}/${DATE_AND_TIME}_train.log
-checkpoints=""
+# checkpoints=""
 
-for f in `ls $BASEDIR/model/${name}/checkpoints/model_ppl_*`
-do
-    checkpoints=$checkpoints"${f}|"
-done
-checkpoints=`echo $checkpoints | sed -e "s/|$//g"`
+# for f in `ls $BASEDIR/model/${name}/checkpoints/model_ppl_*`
+# do
+#     checkpoints=$checkpoints"${f}|"
+# done
+# checkpoints=`echo $checkpoints | sed -e "s/|$//g"`
 
-python3 -u $NMTDIR/average_checkpoints.py $gpu_string_avg \
-        -models $checkpoints \
-        -output $BASEDIR/model/${name}/model.pt
-
-rm -r $BASEDIR/tmp/${name}/
+# python3 -u $NMTDIR/average_checkpoints.py $gpu_string_avg \
+#         -models $checkpoints \
+#         -output $BASEDIR/model/${name}/model.pt

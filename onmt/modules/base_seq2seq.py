@@ -191,8 +191,8 @@ class Classifier(nn.Module):
         if self.training:
             classifier_input = grad_reverse(classifier_input, self.grad_scale)
 
-        # TODO test sum of encoder hidden states per sentence -> check again
-        classifier_input = torch.sum(classifier_input, dim=0)
+        # # TODO lena, test sum of encoder hidden states per sentence -> check again
+        # classifier_input = torch.sum(classifier_input, dim=0)
 
         # added float to the end
         if self.mid_layer_size == 0:

@@ -73,7 +73,7 @@ class CrossEntropyLossBase(_Loss):
                 gtruth = targets.contiguous().view(-1)
             scores = scores.view(-1, scores.size(-1))  # 2D, batch * (time X vocab_size)
             lprobs = scores
-            print("lprobs.size(), gtruth.size(): ", lprobs.size(), torch.clamp(gtruth.unsqueeze(1)-1, min=0).size())
+            # print("(loss.py) lprobs.size(), gtruth.size(): ", lprobs.size(), torch.clamp(gtruth.unsqueeze(1)-1, min=0).size())
             non_pad_mask = gtruth.ne(self.padding_idx)
             nll_loss = -lprobs.gather(1, torch.clamp(gtruth.unsqueeze(1)-1, min=0))[non_pad_mask]
             nll_loss = nll_loss.sum()
@@ -100,23 +100,30 @@ class CrossEntropyLossBase(_Loss):
 
         return loss, loss_data
 
-    def _compute_gender_loss(self, scores, targets):
-        try:
-            gtruth = targets.view(-1)  # 1D, (batch X time).
-        except RuntimeError:
-            gtruth = targets.contiguous().view(-1)
-        # scores = scores.view(-1, scores.size(-1))  # 2D, batch * (time X vocab_size)
-        lprobs = scores
-        # lprobs = torch.argmax(scores, dim=1).unsqueeze(1) # TODO add 1 b/c of padding=0?
-        # print("lprobs.size(), gtruth.size(): ", lprobs.size(), torch.clamp(gtruth.unsqueeze(1)-1, min=0).size())
-        non_pad_mask = gtruth.ne(self.padding_idx)
-        nll_loss = -lprobs.gather(1, torch.clamp(gtruth.unsqueeze(1)-1, min=0))[non_pad_mask]
-        nll_loss = nll_loss.sum()
-        loss = nll_loss
+    # def _compute_gender_loss(self, scores, targets, reverse_landscape=False):
+    #     # print("(loss.py) targets, scores: ", targets, scores)
+    #     # print("(loss.py) targets, scores: ", targets.size(), scores.size())
+    #     if not reverse_landscape:
+    #         try:
+    #             gtruth = targets.view(-1)  # 1D, (batch X time).
+    #         except RuntimeError:
+    #             gtruth = targets.contiguous().view(-1)
+    #         scores = scores.view(-1, scores.size(-1))  # 2D, batch * (time X vocab_size)
+    #         lprobs = scores
+    #         # lprobs = torch.argmax(scores, dim=1).unsqueeze(1) # TODO add 1 b/c of padding=0?
+    #         print("(loss.py) lprobs.size(), gtruth.size(): ", lprobs.size(), torch.clamp(gtruth.unsqueeze(1)-1, min=0).size())
+    #         print("(loss.py) unique gtruth: ", torch.unique(gtruth))
+    #         non_pad_mask = gtruth.ne(self.padding_idx)
+    #         nll_loss = -lprobs.gather(1, torch.clamp(gtruth.unsqueeze(1)-1, min=0))[non_pad_mask]
+    #         # nll_loss = -lprobs[non_pad_mask].gather(1, torch.clamp(gtruth.unsqueeze(1)-1, min=0)[non_pad_mask])
+    #         nll_loss = nll_loss.sum()
+    #         loss = nll_loss
+    #     else:
+    #         raise NotImplementedError
 
-        loss_data = loss.data.item()
+    #     loss_data = loss.data.item()
 
-        return loss, loss_data
+    #     return loss, loss_data
 
 
     def forward(self, model_outputs, targets, hiddens, **kwargs):
@@ -170,11 +177,11 @@ class NMTLossFunc(CrossEntropyLossBase):
 
             alpha = 1.0
 
+        # loss, loss_data = self._compute_loss(logprobs, targets) if (not lan_classifier and not gen_classifier) \
+        #     else self._compute_adv_loss(logprobs, targets, reverse_landscape=reverse_landscape) if lan_classifier \
+        #         else self._compute_gender_loss(logprobs, targets) # no label smoothing
         loss, loss_data = self._compute_loss(logprobs, targets) if (not lan_classifier and not gen_classifier) \
-            else self._compute_adv_loss(logprobs, targets, reverse_landscape=reverse_landscape) if lan_classifier \
-                else self._compute_gender_loss(logprobs, targets) # no label smoothing
-                # else self._compute_adv_loss(logprobs, targets, reverse_landscape=reverse_landscape, multiclass=True) # no label smoothing
-                # else self._compute_loss(logprobs, targets) # TODO # no label smoothing
+            else self._compute_adv_loss(logprobs, targets, reverse_landscape=reverse_landscape) # no label smoothing
         total_loss = loss
 
         if mirror:

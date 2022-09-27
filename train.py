@@ -190,15 +190,18 @@ def main():
 
 
             # check if gender files exist (in the case of mushe training data)
-            if os.path.exists(train_path + '.gen.bin'):
-                assert 'gen' in dicts
-                train_gen = MMapIndexedDataset(train_path + '.gen')
+            if os.path.exists(train_path + '.gen_sent.bin'):
+                assert 'gen_sent' in dicts
+                train_gen_sent = MMapIndexedDataset(train_path + '.gen_sent')
             else:
-                train_gen = list()
-                # train_tgt_langs = list()
-                # # Allocate a Tensor(1) for the bilingual case
-                # train_src_langs.append(torch.Tensor([dicts['gen']['src']]))
-                # train_tgt_langs.append(torch.Tensor([dicts['gen']['tgt']]))
+                train_gen_sent = list()
+
+            # check if gender files exist (in the case of mushe training data)
+            if os.path.exists(train_path + '.gen_tok.bin'):
+                assert 'gen_tok' in dicts
+                train_gen_tok = MMapIndexedDataset(train_path + '.gen_tok')
+            else:
+                train_gen_tok = list()
 
 
             # check the length files if they exist
@@ -214,11 +217,21 @@ def main():
                 data_type = 'text'
 
             if not opt.streaming:
+                if opt.gender_classifier:
+                    if opt.gender_classifier_tok:
+                        train_gen_data = train_gen_tok
+                    elif opt.gender_classifier_sent:
+                        train_gen_data = train_gen_sent
+                    else:
+                        raise NotImplementedError
+                else:
+                    train_gen_data = None
+
                 train_data = onmt.Dataset(train_src,
                                           train_tgt,
                                           train_src_sizes, train_tgt_sizes,
                                           train_src_langs, train_tgt_langs,
-                                          gen=train_gen,
+                                          train_gen_data,
                                           batch_size_words=opt.batch_size_words,
                                           data_type=data_type, sorting=True,
                                           batch_size_sents=opt.batch_size_sents,
@@ -262,11 +275,19 @@ def main():
                 valid_tgt_langs.append(torch.Tensor([dicts['langs']['tgt']]))
 
 
-            if os.path.exists(valid_path + '.gen.bin'):
-                assert 'gen' in dicts
-                valid_gen = MMapIndexedDataset(valid_path + '.gen')
+            # check if gender files exist (in the case of mushe training data)
+            if os.path.exists(valid_path + '.gen_sent.bin'):
+                assert 'gen_sent' in dicts
+                valid_gen_sent = MMapIndexedDataset(valid_path + '.gen_sent')
             else:
-                valid_gen = list()
+                valid_gen_sent = list()
+
+            # check if gender files exist (in the case of mushe training data)
+            if os.path.exists(valid_path + '.gen_tok.bin'):
+                assert 'gen_tok' in dicts
+                valid_gen_tok = MMapIndexedDataset(valid_path + '.gen_tok')
+            else:
+                valid_gen_tok = list()
 
 
             # check the length files if they exist
@@ -277,10 +298,19 @@ def main():
                 valid_src_sizes, valid_tgt_sizes = None, None
 
             if not opt.streaming:
+                if opt.gender_classifier:
+                    if opt.gender_classifier_tok:
+                        valid_gen_data = valid_gen_tok
+                    elif opt.gender_classifier_sent:
+                        valid_gen_data = valid_gen_sent
+                    else:
+                        raise NotImplementedError
+                else:
+                    valid_gen_data = None
                 valid_data = onmt.Dataset(valid_src, valid_tgt,
                                           valid_src_sizes, valid_tgt_sizes,
                                           valid_src_langs, valid_tgt_langs,
-                                          valid_gen,
+                                          valid_gen_data,
                                           batch_size_words=opt.batch_size_words,
                                           data_type=data_type, sorting=True,
                                           batch_size_sents=opt.batch_size_sents,
@@ -288,6 +318,7 @@ def main():
                                           cleaning=True, verbose=True, debug=True,
                                           num_split=len(opt.gpus),
                                           token_level_lang=opt.language_classifier_tok,
+                                          token_level_gen=opt.gender_classifier_tok,
                                           bidirectional=opt.bidirectional_translation,
                                           en_id=opt.en_id)
             else:
@@ -450,7 +481,7 @@ def main():
         checkpoint = torch.load(opt.load_from, map_location=lambda storage, loc: storage)
         print("* Loading dictionaries from the checkpoint")
         dicts = checkpoint['dicts']
-        print(dicts.keys())
+        print("(train.py) dict.keys() of checkpoint/saved model: ", dicts.keys())
 
         if opt.load_vocab_from_data is not None:  # only useful when vocab is expanded
             vocab_data = torch.load(opt.load_vocab_from_data, map_location=lambda storage, loc: storage)
@@ -508,7 +539,6 @@ def main():
         #                                       label_smoothing=opt.label_smoothing,
         #                                       ctc_weight=opt.ctc_loss)
         else:
-            print("TODO: loss with gender classifier, dicts['tgt'].size(): ", dicts['tgt'].size())
             loss_function = NMTLossFunc(opt.model_size, dicts['tgt'].size(),
                                         label_smoothing=opt.label_smoothing,
                                         mirror=opt.mirror_loss)
@@ -548,9 +578,10 @@ def main():
     if len(opt.gpus) > 1 or opt.virtual_gpu > 1:
         raise NotImplementedError("Multi-GPU training is not supported at the moment.")
     else:
-        if opt.gender_classifier:
-            trainer = XEGenderTrainer(model, loss_function, train_data, valid_data, dicts, opt)
-        elif not opt.adversarial_classifier:
+        # if opt.gender_classifier:
+        #     trainer = XEGenderTrainer(model, loss_function, train_data, valid_data, dicts, opt)
+        # elif not opt.adversarial_classifier:
+        if not opt.adversarial_classifier:
             trainer = XETrainer(model, loss_function, train_data, valid_data, dicts, opt, True, aux_loss_function)
         else:
             trainer = XEAdversarialTrainer(model, loss_function, train_data, valid_data, dicts, opt)

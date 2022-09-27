@@ -87,10 +87,10 @@ def build_tm_model(opt, dicts):
         if opt.gender_classifier_sent:
             gender_output_size = 2
         elif opt.gender_classifier_tok:
-            gender_output_size = 4 # TODO lena, 3 vs. 4? (4 = 3 + 1 bc of padding)
+            gender_output_size = 3 # TODO lena, 3 vs. 4? (4 = 3 + 1 bc of padding)
         else:
             raise NotImplementedError
-        print("(model_factory.py) gender_output_size: ", gender_output_size)
+        print("(model_factory.py) gender_output_size/num labels: ", gender_output_size)
 
         if opt.gender_token_classifier_at is not None and opt.gender_token_classifier_at != -1:
             gender_classifier_input_name = 'mid_layer_output'  # specified encoder layer
@@ -102,7 +102,6 @@ def build_tm_model(opt, dicts):
                                                                fix_norm=False, grad_scale=opt.gradient_scale,
                                                                mid_layer_size=gender_mid_layer_size,
                                                                input_name=gender_classifier_input_name))
-        print(f"Num. of generators: {len(generators)}")
 
     # BUILD EMBEDDINGS
     if 'src' in dicts:
