@@ -200,6 +200,8 @@ def collect_fn(src_data, tgt_data,
     if gen_data is not None:
         if not token_level_gen:           
             # combine all sentence labels.. # TODO, lena
+            print("(dataset.py) sentence-level labels are not yet implemented!")
+            raise NotImplementedError
             tensors['gen'] = torch.cat(gen_data).long()  # concat gender labels of entire batch
         else:
             tensors['gen'] = gen_data
