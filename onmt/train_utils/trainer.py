@@ -10,6 +10,7 @@ import re
 import time
 import torch
 from apex import amp
+from torchmetrics import F1Score, Precision, Recall
 
 import onmt
 import onmt.markdown
@@ -388,9 +389,11 @@ class XETrainer(BaseTrainer):
         report_cm = True
         if self.opt.language_classifier or self.opt.gender_classifier:
             total_predict, correct_predict = 0.0, 0.0
-            correct_predict_f, correct_predict_m, total_predict_f, total_predict_m = 0.0, 0.0, 0.0, 0.0
             num_labels = self.model.generator[1].output_size
             res = torch.zeros(num_labels)
+
+            if self.opt.gender_classifier:
+                y_true, y_pred = [], []
 
             if report_cm:
                 cm = torch.zeros([num_labels, num_labels], dtype=torch.long, device='cpu')
@@ -578,9 +581,6 @@ class XETrainer(BaseTrainer):
                 # gender classifier
                 if opt.gender_classifier: # and opt.gender_classifier_tok:
                     targets_classifier = batch.get('gen') 
-                    # targets_classifier = targets_classifier.view(-1, targets_classifier.size(-1)) 
-                    # targets_classifier += 1
-                    # print("(trainer.py) targets_classifier.size(): ", targets_classifier.size())
 
                     classifier_loss_dict = self.loss_function(outputs, targets=targets_classifier, model=self.model,
                                                               gen_classifier=True)
@@ -598,23 +598,28 @@ class XETrainer(BaseTrainer):
                     #     total_adv_loss += classifier_loss_data
 
                     if opt.gender_classifier is not None and report_classifier:
+                        # probabilities per class (0: neuter, 1: masculine, 2: feminine)
                         logprobs_gen = outputs['logprobs_gen']
-
-                        print("(trainer.py) logprobs_gen.size(): ", logprobs_gen.size())
-                        print("(trainer.py) targets_classifier.size(): ", targets_classifier.size())
                         pred = logprobs_gen  # T, B, V
-                        # print("(trainer.py) pred.size(): ", pred.size())
 
+                        # argmax indices
                         pred_idx = torch.argmax(pred, dim=-1).cpu()  # T, B. starts from 0
-                        print("(trainer.py) pred_idx.size(): ", pred_idx.size())
+                        y_pred.extend(pred_idx[targets_classifier > 0].flatten().cpu())
+
+                        # correct indices
                         correct_idx = (targets_classifier.cpu() - 1 == pred_idx) # padding not counted, since 0 - 1 would be -1
 
-                        # print("(trainer.py) --- predictions 1-5  : ", pred_idx[:5])
-                        # print("(trainer.py) --- targets 1-5      : ", (targets_classifier.cpu() - 1)[:5])
-
+                        # store results (counts)
                         correct_predict += correct_idx.sum()
                         total_predict += (torch.flatten(targets_classifier) != 0).nonzero().size()[0]
-                        # total_predict += (~outputs['src_mask']).sum()
+
+                        # targets (without padding)
+                        y_true.extend((targets_classifier[targets_classifier > 0]).flatten() - 1)
+
+                        # print("(trainer.py) logprobs_gen.size(): ", logprobs_gen.size())
+                        # print("(trainer.py) targets_classifier.size(): ", targets_classifier.size())
+                        # print("(trainer.py) pred_idx.size(): ", pred_idx.size())
+
 
                         # if bidirectional_translation:
                         #     logprobs_gen = outputs_rev['logprobs_gen']
@@ -626,22 +631,19 @@ class XETrainer(BaseTrainer):
                         #     correct_idx_rev = (targets_classifier_rev.cpu() - 1 == pred_idx_rev)
 
                         #     correct_predict += correct_idx_rev.sum()
-                        #     total_predict += targets_classifier_rev.size()[0]  # TODO lena now sentence level, later tok
+                        #     total_predict += targets_classifier_rev.size()[0]  
                         #     # total_predict += (~outputs_rev['src_mask']).sum()
 
                         if report_cm:
                             all_cnt = []
-                            if opt.gender_token_classifier == 0:   # gender label starts from 1
-                                label_range = torch.arange(1, num_labels + 1)
-                                # print("(trainer.py) label_range: ", label_range)
+                            if opt.gender_token_classifier == 0:   
+                                label_range = torch.arange(1, num_labels + 1)  # gender label starts from 1
                             else:
                                 label_range = torch.arange(num_labels)
 
                             for p in label_range:  # 1, 2, 3, 4
                                 cur_label_indx = (targets_classifier == p)  # those positions with this current label
                                 pred_val, pred_cnt = torch.unique(pred_idx[cur_label_indx], return_counts=True)
-                                # print("(trainer.py) label, # pred: ", p, pred_cnt)
-                                
                                 if pred_val.shape[0] < num_labels:  # not all labels have been predicted
                                     pred_cnt_padded = torch.zeros(num_labels, dtype=torch.long, device='cpu')
                                     pred_cnt_padded[pred_val] = pred_cnt
@@ -651,17 +653,6 @@ class XETrainer(BaseTrainer):
                                     raise ValueError('Some impossible label was predicted. Check your label esp. indexing.')
 
                                 all_cnt.append(pred_cnt)
-                                if p == 2:
-                                    # masculine
-                                    print(pred_cnt[1])
-                                    correct_predict_m += pred_cnt[1]
-                                    total_predict_m += sum(pred_cnt)
-                                if p == 3:
-                                    # feminine
-                                    print(pred_cnt[2])
-                                    correct_predict_f += pred_cnt[2]
-                                    total_predict_f += sum(pred_cnt)
-                            print("(trainer.py) all_cnt: ", all_cnt)
 
                             if bidirectional_translation:
                                 for p in label_range:  # 1, 2, 3, 4
@@ -682,20 +673,44 @@ class XETrainer(BaseTrainer):
                 
 
             if (opt.token_classifier is not None or opt.gender_token_classifier is not None) and report_classifier:
-                print("(trainer.py) correct_predict, total_predict: ", correct_predict, total_predict)
-                print('Classifier accuracy', (correct_predict / total_predict).data.item())
+                print("*************************************************************************")
+                # print("(trainer.py) correct_predict, total_predict: ", correct_predict, total_predict)
+                if opt.language_classifier:
+                    print('Classifier accuracy', (correct_predict / total_predict).data.item())
+                
                 if opt.gender_classifier:
-                    print('Classifier accuracy (f & m)', ((correct_predict_f + correct_predict_m) / (total_predict_f + total_predict_m)).data.item())
-                    print('Classifier accuracy (m)', (correct_predict_m / total_predict_m).data.item())
-                    print('Classifier accuracy (f)', (correct_predict_f / total_predict_f).data.item())
-                    # TODO lena, accuracy for individual classes
+                    # gender (f/m) specific metrics
+                    _y_true = torch.tensor(y_true, dtype=torch.int32, device=torch.device('cpu'))
+                    _y_pred = torch.tensor(y_pred, dtype=torch.int32, device=torch.device('cpu'))
+                    n_cor_n = (_y_pred[_y_true == 0].flatten() == 0).nonzero(as_tuple=False).size()[0]
+                    n_cor_m = (_y_pred[_y_true == 1].flatten() == 1).nonzero().size()[0]
+                    n_cor_f = (_y_pred[_y_true == 2].flatten() == 2).nonzero().size()[0]
+                    n_tar_n = (_y_true.flatten() == 0).nonzero().size()[0]
+                    n_tar_m = (_y_true.flatten() == 1).nonzero().size()[0]
+                    n_tar_f = (_y_true.flatten() == 2).nonzero().size()[0]
+                    f1 = F1Score(num_classes=3, average="none")(_y_true, _y_pred)
+                    f1_w = F1Score(num_classes=3, average="weighted")(_y_true, _y_pred)
+                    precision = Precision(num_classes=3, average="none")(_y_true, _y_pred)
+                    recall = Recall(num_classes=3, average="none")(_y_true, _y_pred)
+                    print('Classifier accuracy (n m f)  ', (n_cor_n + n_cor_m + n_cor_f) / (n_tar_n + n_tar_m + n_tar_f))
+                    print('Classifier accuracy (m f)    ', (n_cor_m + n_cor_f) / (n_tar_m + n_tar_f))
+                    print('Classifier accuracy (m)      ', n_cor_m / n_tar_m)
+                    print('Classifier accuracy (f)      ', n_cor_f / n_tar_f)
+                    print('Classifier Precision (n/m/f) ', precision[0].item(), precision[1].item(), precision[2].item())
+                    print('Classifier Recall (n/m/f)    ', recall[0].item(), recall[1].item(), recall[2].item())
+                    print('Classifier F1 score (n/m/f)  ', f1[0].item(), f1[1].item(), f1[2].item())
+                    print('Classifier F1 score (n/m/f)  ', f1_w.item())
 
                 if report_cm:
                     print(cm.cpu().numpy())
                     cm = torch.true_divide(cm, cm.sum(dim=1, keepdim=True)) # divided over true
                     cm2 = torch.true_divide(cm, cm.sum(dim=0, keepdim=True))    # divided over predicted
+                    cm3 = 2 * torch.true_divide((cm * cm2), (cm + cm2))
                     print('Confusion matrix, precision (row: true, col: pred):\n', cm.cpu().numpy())
                     print('Confusion matrix, recall (row: true, col: pred):\n', cm2.cpu().numpy())
+                    print('Confusion matrix, F1 (row: true, col: pred):\n', cm3.cpu().numpy())
+                
+                print("*************************************************************************")
 
         self.model.train()
         return total_loss / total_words, total_adv_loss / total_src_words
