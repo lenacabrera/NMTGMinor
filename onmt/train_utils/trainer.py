@@ -388,6 +388,7 @@ class XETrainer(BaseTrainer):
         report_cm = True
         if self.opt.language_classifier or self.opt.gender_classifier:
             total_predict, correct_predict = 0.0, 0.0
+            correct_predict_f, correct_predict_m, total_predict_f, total_predict_m = 0.0, 0.0, 0.0, 0.0
             num_labels = self.model.generator[1].output_size
             res = torch.zeros(num_labels)
 
@@ -598,20 +599,21 @@ class XETrainer(BaseTrainer):
 
                     if opt.gender_classifier is not None and report_classifier:
                         logprobs_gen = outputs['logprobs_gen']
-                        # logprobs_gen = logprobs_gen.masked_fill(outputs['src_mask'].permute(2, 0, 1),
-                        #                                                 onmt.constants.PAD).type_as(logprobs_gen)
+
+                        print("(trainer.py) logprobs_gen.size(): ", logprobs_gen.size())
+                        print("(trainer.py) targets_classifier.size(): ", targets_classifier.size())
                         pred = logprobs_gen  # T, B, V
                         # print("(trainer.py) pred.size(): ", pred.size())
 
                         pred_idx = torch.argmax(pred, dim=-1).cpu()  # T, B. starts from 0
-                        # print("(trainer.py) pred_idx.size(): ", pred_idx.size())
+                        print("(trainer.py) pred_idx.size(): ", pred_idx.size())
                         correct_idx = (targets_classifier.cpu() - 1 == pred_idx) # padding not counted, since 0 - 1 would be -1
 
                         # print("(trainer.py) --- predictions 1-5  : ", pred_idx[:5])
                         # print("(trainer.py) --- targets 1-5      : ", (targets_classifier.cpu() - 1)[:5])
 
                         correct_predict += correct_idx.sum()
-                        total_predict += targets_classifier.size()[0] * targets_classifier.size()[1]   # TODO lena now sentence level, later tok
+                        total_predict += (torch.flatten(targets_classifier) != 0).nonzero().size()[0]
                         # total_predict += (~outputs['src_mask']).sum()
 
                         # if bidirectional_translation:
@@ -629,26 +631,37 @@ class XETrainer(BaseTrainer):
 
                         if report_cm:
                             all_cnt = []
-                            if opt.gender_token_classifier == 0:   # language label starts from 1
-                                label_range = torch.arange(num_labels)
-                                # label_range = torch.arange(1, num_labels + 1)  # TODO uncomment
+                            if opt.gender_token_classifier == 0:   # gender label starts from 1
+                                label_range = torch.arange(1, num_labels + 1)
+                                # print("(trainer.py) label_range: ", label_range)
                             else:
                                 label_range = torch.arange(num_labels)
 
                             for p in label_range:  # 1, 2, 3, 4
                                 cur_label_indx = (targets_classifier == p)  # those positions with this current label
                                 pred_val, pred_cnt = torch.unique(pred_idx[cur_label_indx], return_counts=True)
-
+                                # print("(trainer.py) label, # pred: ", p, pred_cnt)
+                                
                                 if pred_val.shape[0] < num_labels:  # not all labels have been predicted
                                     pred_cnt_padded = torch.zeros(num_labels, dtype=torch.long, device='cpu')
                                     pred_cnt_padded[pred_val] = pred_cnt
                                     pred_cnt = pred_cnt_padded
-                                    # print("not all labels have been predicted, pred_cnt: ", pred_cnt)
+                                    print("not all labels have been predicted, pred_cnt: ", pred_cnt)
                                 elif pred_val.shape[0] > num_labels:
                                     raise ValueError('Some impossible label was predicted. Check your label esp. indexing.')
 
                                 all_cnt.append(pred_cnt)
-                            # print("all_cnt: ", all_cnt)
+                                if p == 2:
+                                    # masculine
+                                    print(pred_cnt[1])
+                                    correct_predict_m += pred_cnt[1]
+                                    total_predict_m += sum(pred_cnt)
+                                if p == 3:
+                                    # feminine
+                                    print(pred_cnt[2])
+                                    correct_predict_f += pred_cnt[2]
+                                    total_predict_f += sum(pred_cnt)
+                            print("(trainer.py) all_cnt: ", all_cnt)
 
                             if bidirectional_translation:
                                 for p in label_range:  # 1, 2, 3, 4
@@ -671,6 +684,11 @@ class XETrainer(BaseTrainer):
             if (opt.token_classifier is not None or opt.gender_token_classifier is not None) and report_classifier:
                 print("(trainer.py) correct_predict, total_predict: ", correct_predict, total_predict)
                 print('Classifier accuracy', (correct_predict / total_predict).data.item())
+                if opt.gender_classifier:
+                    print('Classifier accuracy (f & m)', ((correct_predict_f + correct_predict_m) / (total_predict_f + total_predict_m)).data.item())
+                    print('Classifier accuracy (m)', (correct_predict_m / total_predict_m).data.item())
+                    print('Classifier accuracy (f)', (correct_predict_f / total_predict_f).data.item())
+                    # TODO lena, accuracy for individual classes
 
                 if report_cm:
                     print(cm.cpu().numpy())
@@ -882,6 +900,7 @@ class XETrainer(BaseTrainer):
                     if self.opt.gender_classifier:
                         # gender classifier
                         targets_classifier = batch.get('gen')
+                        # print("(trainer.py) targets_classifier.size() gen: ", targets_classifier.size())
 
                         classifier_loss_dict = self.loss_function(outputs, targets=targets_classifier,
                                                                 model=self.model, gen_classifier=True)

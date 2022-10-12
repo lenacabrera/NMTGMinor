@@ -22,6 +22,11 @@ def main():
                     
     tok_labels = []
 
+    # stats
+    num_neut = 0
+    num_femi = 0
+    num_masc = 0
+
     for text, labels in zip(text_file, label_file):
         word_labels = labels.split()
         word_idx = 0
@@ -38,6 +43,7 @@ def main():
                 # add neuter gender label
                 # print("--neuter: ", tok)
                 tok_labels_str += '0'
+                num_neut += 1
             else:
                 # if tok == "&quot;" and tokens[i-1] == ".":
                     # print("........")
@@ -49,6 +55,12 @@ def main():
                         # print(tok, tokens[i-1]) 
                         word_idx -= 1 # TODO fix this
                     tok_labels_str += word_labels[word_idx]
+                    if word_labels[word_idx] == "0":
+                        num_neut += 1
+                    elif word_labels[word_idx] == "1":
+                        num_masc += 1
+                    else:
+                        num_femi += 1 
                     # print("word label: ", word_labels[word_idx])
                     interm_subword = False
                     for m in tok_marks:
@@ -76,6 +88,10 @@ def main():
         tok_labels.append(tok_labels_str)
         out_file.write(tok_labels_str + '\n')
     print(max([len(lab) for lab in tok_labels]))
+
+    print("# neuter:    ", num_neut)
+    print("# masculine: ", num_masc)
+    print("# feminine:  ", num_femi)
 
 if __name__ == '__main__':
     main()

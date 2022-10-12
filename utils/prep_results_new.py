@@ -20,6 +20,32 @@ parser.add_argument('-out_path_csv', required=True, default=None)
 parser.add_argument('-out_path_json', required=True, default=None)
 parser.add_argument('-df_path', required=True, default=None)
 
+corrected_references = {
+    "es": {},
+    "fr": {"Mais unede mes meilleurs amis, un superbe dame kenyan, Esther Kaecha, m'a appelée dans ce moment de désespoir, et elle m'a dit : « Mary, tu as beaucoup de volonté.": "Mais un de mes meilleurs amis, un superbe dame kenyan, Esther Kaecha, m'a appelée dans ce moment de désespoir, et elle m'a dit : « Mary, tu as beaucoup de volonté."},
+    "it": {}
+}
+
+corrected_gterms = {
+    "es": {},
+    "fr": {
+        "C'était un avocat ou un brasseur d'argent qui, pour le reste de sa vie, pourrait dire aux gens qu'il était entré dans un bâtiment en feu pour sauver une créature vivante, juste parce qu'il m'avait battu de 5 secondes.": "un avocat un brasseur",
+        "C'était une avocate ou une brasseuse d'argent qui, pour le reste de sa vie, pourrait dire aux gens qu'il était entré dans un bâtiment en feu pour sauver une créature vivante, juste parce qu'il m'avait battu de 5 secondes.": "une avocate une brasseuse",
+    },
+    "it": {
+        # "Un'altra studentessa ci ha riportato che ha imparato a progettare con empatia, contrariamente al progettare per funzionalità, che era ciò che la sua educazione in ingegneria le aveva insegnato.": "altra studentessa",
+        # "Un altro studente ci ha riportato che ha imparato a progettare con empatia, contrariamente al progettare per funzionalità, che era ciò che la sua educazione in ingegneria le aveva insegnato.": "altro studente",
+        # "Parlando con un'infermiera il giorno dopo, lei mi disse: \"Oh, parli del menage à trois\".": "infermiera", 
+        # "Parlando con un infermiere il giorno dopo, lei mi disse: \"Oh, parli del menage à trois\".": "infermiere", 
+        # "E le ho domandato: \"Questo fa di me un'assassina?\" Non ha saputo rispondere.": "assassina", 
+        # "E le ho domandato: \"Questo fa di me un assassino?\" Non ha saputo rispondere.": "assassino", 
+        # "Il suo nome è Dottor Pizzutillo, un Italoamericano, il cui nome, apparentemente, era troppo difficile da pronunciare per la maggior parte degli americani, così è diventato dottor P. E il dottor P indossava sempre papillon colorati e aveva una perfetta inclinazione per lavorare coi bambini.": "Dottor Italoamericano diventato Dottor Dottor", 
+        # "Il suo nome è Dottoressa Pizzutillo, un'Italoamericana, il cui nome, apparentemente, era troppo difficile da pronunciare per la maggior parte degli americani, così è diventata dottoressa P. E il dottoressa P indossava sempre papillon colorati e aveva una perfetta inclinazione per lavorare coi bambini.": "Dottoressa Italoamerican diventata Dottoressa Dottoressa", 
+        # "Sono un esperto in relazioni. \"E subito dopo si lancia ancora in discorsi su uccelli rari, alghe e strane piante acquatiche.": "esperto", 
+        # "Sono un'esperta in relazioni. \"E subito dopo si lancia ancora in discorsi su uccelli rari, alghe e strane piante acquatiche.": "esperta", 
+        },
+}
+
 
 def get_bleu_scores_mustshe(lines):
     bleu_scores = []
@@ -30,7 +56,836 @@ def get_bleu_scores_mustshe(lines):
     avg_bleu = round(np.average(np.array(bleu_scores)), 1)
     return avg_bleu
 
+
+
 def get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl):
+
+    l = tl
+    if tl == "en":
+        l = sl
+    
+    gterms_file = open(f"{raw_path}/{ref}/{gender_set}/annotation/{l}_gterms.csv", "r", encoding="utf-8")
+    if ref == "correct_ref":
+        op_gterms_file = open(f"{raw_path}/wrong_ref/{gender_set}/annotation/{l}_gterms.csv", "r", encoding="utf-8")
+    else:
+        op_gterms_file = open(f"{raw_path}/correct_ref/{gender_set}/annotation/{l}_gterms.csv", "r", encoding="utf-8")
+    speaker_file = open(f"{raw_path}/{ref}/{gender_set}/annotation/{l}_speaker.csv", "r", encoding="utf-8")
+    category_file = open(f"{raw_path}/{ref}/{gender_set}/annotation/{l}_category.csv", "r", encoding="utf-8")
+    
+    # target reference file (correct/wrong)
+    tref_file = open(f"{raw_path}/{ref}/{gender_set}/{sl}-{tl}.t", "r", encoding="utf-8")
+    # print(f"tgt file: {raw_path}/{ref}/{gender_set}/{sl}-{tl}.t")
+
+    # swapped "opposite" target reference
+    if ref == "correct_ref":
+        op_tref_file = open(f"{raw_path}/wrong_ref/{gender_set}/{sl}-{tl}.t", "r", encoding="utf-8")
+        # print(f"op. tgt file: {raw_path}/wrong_ref/{gender_set}/{sl}-{tl}.t")
+    else:
+        op_tref_file = open(f"{raw_path}/correct_ref/{gender_set}/{sl}-{tl}.t", "r", encoding="utf-8")
+        # print(f"op. tgt file: {raw_path}/correct_ref/{gender_set}/{sl}-{tl}.t")
+
+    # pred file
+    if pl == None:
+        # pred_file = open(f"{pred_path}/correct_ref/{gender_set}/{f}", "r", encoding="utf-8")
+        pred_file = open(f"{pred_path}/{ref}/{gender_set}/{f}", "r", encoding="utf-8")
+        if gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+            print(f"pred file: {pred_path}/{ref}/{gender_set}/{f}")
+    else:
+        # pred_file = open(f"{pred_path}/pivot/correct_ref/{gender_set}/{sl}-{pl}-{tl}.real.pivotout.t.pt", "r", encoding="utf-8")
+        pred_file = open(f"{pred_path}/pivot/{ref}/{gender_set}/{sl}-{pl}-{tl}.real.pivotout.t.pt", "r", encoding="utf-8")
+        if gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+            print(f"pred file: {pred_path}/pivot/{ref}/{gender_set}/{sl}-{pl}-{tl}.real.pivotout.t.pt")
+
+    accuracies_total = []
+    accuracies_total_new = []
+    accuracies_1 = []
+    accuracies_2 = []
+    accuracies_f_speaker = []
+    accuracies_m_speaker = []
+    accuracies_f_speaker_1 = []
+    accuracies_f_speaker_2 = []
+    accuracies_m_speaker_1 = []
+    accuracies_m_speaker_2 = []
+
+    n_pred = []
+    n_corr = []
+    pred_all = []
+    corr_all = []
+    op_accuracies_total = []
+
+    if tl != "en":
+        for j, (tref, op_tref, pred, gterms, op_gterms, speaker, category) in enumerate(zip(tref_file, op_tref_file, pred_file, gterms_file, op_gterms_file, speaker_file, category_file)):
+            tref_ = tref.strip()
+            op_tref_ = op_tref.strip()
+            gterms_list = gterms.split()
+            op_gterms_list = op_gterms.split()
+
+            # correct reference
+            if tref_ in [e.strip() for e in corrected_references[l].keys()]:
+                tref = corrected_references[l][tref_]
+            if op_tref_ in [e.strip() for e in corrected_references[l].keys()]:
+                op_tref = corrected_references[l][op_tref_]
+
+            if tref_ in [e.strip() for e in corrected_gterms[l].keys()]:
+                # correct gender terms
+                gterms_list = corrected_gterms[l][tref_].split()
+            
+            punctuation_marks = [".", ",", "!", "?", ":", ";", "¿", "¡", "\"", "\n", "(", ")", "...", "—", "«", "»"]
+            for p_mark in punctuation_marks:
+            #     tref = tref.replace(p_mark, " ")
+            #     op_tref = op_tref.replace(p_mark, " ")
+            #     pred = pred.replace(p_mark, " ")
+                tref = tref.replace(p_mark, " " + p_mark)
+                op_tref = op_tref.replace(p_mark, " " + p_mark)
+                pred = pred.replace(p_mark, " " + p_mark)
+            tref_list = tref.split()
+            op_tref_list = op_tref.split()
+            pred_list = pred.split()
+             
+            # apply upperbound to gender terms, to prevent rewarding over-generated terms
+            gterms_list = list(set(gterms_list))
+
+            keep_expr = ["un", "une", "una", "l", "qu", "J", "j", "d", "D", "n", "N"]
+            tref_list_ = []
+            for t in tref_list:
+                split_tok = re.split('\'', t)
+                if len(split_tok) > 1:
+                    no_keep = True
+                    for st in split_tok:
+                        if no_keep:
+                            for keep in keep_expr:
+                                if keep in st:
+                                    st += "'"
+                                    tref_list_.append(st)
+                                    no_keep = False
+                                    break
+                        else:
+                            tref_list_.append(st)
+                else:
+                    tref_list_.append(t)
+
+            op_tref_list_ = []
+            for t in op_tref_list:
+                split_tok = re.split('\'', t)
+                if len(split_tok) > 1:
+                    no_keep = True
+                    for st in split_tok:
+                        if no_keep:
+                            for keep in keep_expr:
+                                if keep in st:
+                                    st += "'"
+                                    op_tref_list_.append(st)
+                                    no_keep = False
+                                    break
+                        else:
+                            op_tref_list_.append(st)
+                else:
+                    op_tref_list_.append(t)
+
+            pred_list_ = []
+            for t in pred_list:
+                split_tok = re.split('\'', t)
+                if len(split_tok) > 1:
+                    no_keep = True
+                    for st in split_tok:
+                        if no_keep:
+                            for keep in keep_expr:
+                                if keep in st:
+                                    st += "'"
+                                    pred_list_.append(st)
+                                    no_keep = False
+                                    break
+                        else:
+                            pred_list_.append(st)
+                else:
+                    pred_list_.append(t)
+
+            tref_list = tref_list_
+            op_tref_list = op_tref_list_
+            pred_list = pred_list_
+
+            # print("tref:    ", tref)
+            # print("op_tref: ", op_tref)
+            # print("pred:    ", pred_list)
+            # print()
+
+            g_w_indices = []
+            # if ref == "wrong_ref" and gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+            #     print()
+            #     print(gterms_list)
+            for i, (tw, otw) in enumerate(zip(tref_list, op_tref_list)):
+            # for i, (tw, otw) in enumerate(zip(set(tref_list), set(op_tref_list))):
+                # check where correct and wrong ref. differ and store word index
+                if tw != otw:
+                    # if ref == "wrong_ref" and gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+                    #     print(tw, otw)
+                    g_w_indices.append(i)
+
+            # check correct gterm with pred. words ~ gterm pos. idx.
+            n_forward, n_backward = 2, 2  # buffer around orig. gterm pos. idx.
+            pred_gterms = []
+            for i, gterm in enumerate(gterms_list):
+                pred_all.append(gterm)
+                if len(g_w_indices) > 0 and i < len(g_w_indices):
+                    idx = g_w_indices[i]
+                    if gterm in pred_list[idx-n_backward:idx+n_forward]:
+                        # if ref == "wrong_ref" and gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+                        #     print("pred: ", gterm)
+                        pred_gterms.append(gterm)
+                        corr_all.append(gterm)
+                # else:
+                #     if gterm in pred_list:
+                #         pred_gterms.append(gterm)
+
+
+            # pred_gterms = []
+            # for gterm in gterms_list:
+            #     if gterm in pred_list:
+            #         i = pred_list.index(gterm)
+            #         pred_gterms.append(i)
+
+            # pred_op_gterms = []
+            # for gterm in op_gterms_list:
+            #     if gterm in pred_list:
+            #         i = pred_list.index(gterm)
+            #         pred_op_gterms.append(i)
+
+            # # Bentivogli et al.
+            # pred_gterms = []
+            # for term in gterms_list:
+            #     pred_all.append(term)
+            #     if term in pred_list:
+            #         pred_gterms.append(term)
+            #         corr_all.append(term)
+
+            # compute accuracy
+            acc = len(pred_gterms) / len(gterms_list)    
+            # acc_op = len(pred_op_gterms) / len(op_gterms_list)  
+            # print(acc, acc_op)
+            n_pred.append(len(gterms_list))
+            n_corr.append(len(pred_gterms)) 
+            # pred_gterms_all.extend(pred_gterms) 
+
+            # print()
+            # if ref=="correct_ref" and gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+            #     if len(pred_gterms) > 0:
+            #         print(pred_list[pred_gterms[0]])
+                # print(pred)
+                # print(gterms)
+                # print(op_gterms)
+                # print(acc)
+            # #     print(ref)
+            # #     print(gterms_list)
+            # #     print(op_gterms_list)
+            # #     print(acc, acc_op)
+            #     print(pred_list)
+            #     print(gterms_list)
+
+            accuracies_total.append(acc)
+
+
+            # op_accuracies_total.append(acc_op)
+            # if gender_set == "feminine" and (sl == "it" or tl =="it"):
+            #    print(acc)
+            if speaker.replace("\n", "").lower() == "she":
+                accuracies_f_speaker.append(acc)
+            if speaker.replace("\n", "").lower() == "he":
+                accuracies_m_speaker.append(acc)
+            # gender of referred entity
+            if "1" in category.replace("\n", ""):
+                accuracies_1.append(acc)
+            if "2" in category.replace("\n", ""):
+                accuracies_2.append(acc)
+
+            if speaker.replace("\n", "").lower() == "she" and "1" in category.replace("\n", ""):
+                accuracies_f_speaker_1.append(acc)
+            if speaker.replace("\n", "").lower() == "she" and "2" in category.replace("\n", ""):
+                accuracies_f_speaker_2.append(acc)
+            if speaker.replace("\n", "").lower() == "he" and "1" in category.replace("\n", ""):
+                accuracies_m_speaker_1.append(acc)
+            if speaker.replace("\n", "").lower() == "he" and "2" in category.replace("\n", ""):
+                accuracies_m_speaker_2.append(acc)
+
+        # if ref == "correct_ref" and gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+        # if ref == "wrong_ref" and gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+        # if gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+        #     print(f"tgt file: {raw_path}/{ref}/{gender_set}/{sl}-{tl}.t")
+        #     print(pred_gterms, gterms_list)
+        #     print(np.average(accuracies_total))
+        #     # print(np.average(op_accuracies_total))
+        #     print("new: ", sum(n_corr)/sum(n_pred))
+        #     print(sum(n_pred), sum(n_corr))
+        #     # print(corr_all)
+        #     print("new2: ", len(pred_all), len(corr_all))
+        #     print(len(corr_all)/len(pred_all))
+        #     print()
+
+        for k in range(j+1):
+            accuracies_total_new.append(len(corr_all)/len(pred_all))
+
+        if len(accuracies_total) == 0:
+            accuracies_total.append(0)
+        if len(accuracies_1) == 0:
+            accuracies_1.append(0)
+        if len(accuracies_2) == 0:
+            accuracies_2.append(0)
+        if len(accuracies_f_speaker) == 0:
+            accuracies_f_speaker.append(0)
+        if len(accuracies_m_speaker) == 0:
+            accuracies_m_speaker.append(0)
+        if len(accuracies_f_speaker_1) == 0:
+            accuracies_f_speaker_1.append(0)
+        if len(accuracies_f_speaker_2) == 0:
+            accuracies_f_speaker_2.append(0)
+        if len(accuracies_m_speaker_1) == 0:
+            accuracies_m_speaker_1.append(0)
+        if len(accuracies_m_speaker_2) == 0:
+            accuracies_m_speaker_2.append(0)
+
+    return accuracies_total_new, accuracies_1, accuracies_2, accuracies_f_speaker, accuracies_m_speaker, \
+        accuracies_f_speaker_1, accuracies_f_speaker_2, accuracies_m_speaker_1, accuracies_m_speaker_2
+
+
+def get_accuracies_mustshe_old3(raw_path, pred_path, ref, gender_set, f, sl, tl, pl):
+
+    l = tl
+    if tl == "en":
+        l = sl
+
+    pred_gterms_all = []
+    
+    gterms_file = open(f"{raw_path}/{ref}/{gender_set}/annotation/{l}_gterms.csv", "r", encoding="utf-8")
+    if ref == "correct_ref":
+        op_gterms_file = open(f"{raw_path}/wrong_ref/{gender_set}/annotation/{l}_gterms.csv", "r", encoding="utf-8")
+    else:
+        op_gterms_file = open(f"{raw_path}/correct_ref/{gender_set}/annotation/{l}_gterms.csv", "r", encoding="utf-8")
+    speaker_file = open(f"{raw_path}/{ref}/{gender_set}/annotation/{l}_speaker.csv", "r", encoding="utf-8")
+    category_file = open(f"{raw_path}/{ref}/{gender_set}/annotation/{l}_category.csv", "r", encoding="utf-8")
+    
+    # target reference file (correct/wrong)
+    tref_file = open(f"{raw_path}/{ref}/{gender_set}/{sl}-{tl}.t", "r", encoding="utf-8")
+    # print(f"tgt file: {raw_path}/{ref}/{gender_set}/{sl}-{tl}.t")
+
+    # swapped "opposite" target reference
+    if ref == "correct_ref":
+        op_tref_file = open(f"{raw_path}/wrong_ref/{gender_set}/{sl}-{tl}.t", "r", encoding="utf-8")
+        # print(f"op. tgt file: {raw_path}/wrong_ref/{gender_set}/{sl}-{tl}.t")
+    else:
+        op_tref_file = open(f"{raw_path}/correct_ref/{gender_set}/{sl}-{tl}.t", "r", encoding="utf-8")
+        # print(f"op. tgt file: {raw_path}/correct_ref/{gender_set}/{sl}-{tl}.t")
+
+    # pred file
+    if pl == None:
+        # pred_file = open(f"{pred_path}/correct_ref/{gender_set}/{f}", "r", encoding="utf-8")
+        pred_file = open(f"{pred_path}/{ref}/{gender_set}/{f}", "r", encoding="utf-8")
+        # if gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+            # print(f"pred file: {pred_path}/{ref}/{gender_set}/{f}")
+    else:
+        # pred_file = open(f"{pred_path}/pivot/correct_ref/{gender_set}/{sl}-{pl}-{tl}.real.pivotout.t.pt", "r", encoding="utf-8")
+        pred_file = open(f"{pred_path}/pivot/{ref}/{gender_set}/{sl}-{pl}-{tl}.real.pivotout.t.pt", "r", encoding="utf-8")
+        # if gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+            # print(f"pred file: {pred_path}/pivot/{ref}/{gender_set}/{sl}-{pl}-{tl}.real.pivotout.t.pt")
+
+    accuracies_total = []
+    accuracies_1 = []
+    accuracies_2 = []
+    accuracies_f_speaker = []
+    accuracies_m_speaker = []
+    accuracies_f_speaker_1 = []
+    accuracies_f_speaker_2 = []
+    accuracies_m_speaker_1 = []
+    accuracies_m_speaker_2 = []
+
+    n_pred = []
+    n_corr = []
+    op_accuracies_total = []
+
+    if tl != "en":
+        for tref, op_tref, pred, gterms, op_gterms, speaker, category in zip(tref_file, op_tref_file, pred_file, gterms_file, op_gterms_file, speaker_file, category_file):
+            tref_ = tref.strip()
+            op_tref_ = op_tref.strip()
+            gterms_list = gterms.split()
+            op_gterms_list = op_gterms.split()
+
+            # correct reference
+            if tref_ in [e.strip() for e in corrected_references[l].keys()]:
+                tref = corrected_references[l][tref_]
+            if op_tref_ in [e.strip() for e in corrected_references[l].keys()]:
+                op_tref = corrected_references[l][op_tref_]
+
+            if tref_ in [e.strip() for e in corrected_gterms[l].keys()]:
+                # correct gender terms
+                gterms_list = corrected_gterms[l][tref_].split()
+            
+            punctuation_marks = [".", ",", "!", "?", ":", ";", "¿", "¡", "\"", "\n", "(", ")", "...", "—", "«", "»"]
+            for p_mark in punctuation_marks:
+            #     tref = tref.replace(p_mark, " ")
+            #     op_tref = op_tref.replace(p_mark, " ")
+            #     pred = pred.replace(p_mark, " ")
+                tref = tref.replace(p_mark, " " + p_mark)
+                op_tref = op_tref.replace(p_mark, " " + p_mark)
+                pred = pred.replace(p_mark, " " + p_mark)
+            tref_list = tref.split()
+            op_tref_list = op_tref.split()
+            pred_list = pred.split()
+             
+            # apply upperbound to gender terms, to prevent rewarding over-generated terms
+            # gterms_list = list(set(gterms_list))
+
+            keep_expr = ["un", "une", "una", "l", "qu", "J", "j", "d", "D", "n", "N"]
+            tref_list_ = []
+            for t in tref_list:
+                split_tok = re.split('\'', t)
+                if len(split_tok) > 1:
+                    no_keep = True
+                    for st in split_tok:
+                        if no_keep:
+                            for keep in keep_expr:
+                                if keep in st:
+                                    st += "'"
+                                    tref_list_.append(st)
+                                    no_keep = False
+                                    break
+                        else:
+                            tref_list_.append(st)
+                else:
+                    tref_list_.append(t)
+
+            op_tref_list_ = []
+            for t in op_tref_list:
+                split_tok = re.split('\'', t)
+                if len(split_tok) > 1:
+                    no_keep = True
+                    for st in split_tok:
+                        if no_keep:
+                            for keep in keep_expr:
+                                if keep in st:
+                                    st += "'"
+                                    op_tref_list_.append(st)
+                                    no_keep = False
+                                    break
+                        else:
+                            op_tref_list_.append(st)
+                else:
+                    op_tref_list_.append(t)
+
+            pred_list_ = []
+            for t in pred_list:
+                split_tok = re.split('\'', t)
+                if len(split_tok) > 1:
+                    no_keep = True
+                    for st in split_tok:
+                        if no_keep:
+                            for keep in keep_expr:
+                                if keep in st:
+                                    st += "'"
+                                    pred_list_.append(st)
+                                    no_keep = False
+                                    break
+                        else:
+                            pred_list_.append(st)
+                else:
+                    pred_list_.append(t)
+
+            tref_list = tref_list_
+            op_tref_list = op_tref_list_
+            pred_list = pred_list_
+
+            # print("tref:    ", tref)
+            # print("op_tref: ", op_tref)
+            # print("pred:    ", pred_list)
+            # print()
+
+            g_w_indices = []
+            # if ref == "wrong_ref" and gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+            #     print()
+            #     print(gterms_list)
+            for i, (tw, otw) in enumerate(zip(tref_list, op_tref_list)):
+                # check where correct and wrong ref. differ and store word index
+                if tw != otw:
+                    # if ref == "wrong_ref" and gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+                    #     print(tw, otw)
+                    g_w_indices.append(i)
+
+            # check correct gterm with pred. words ~ gterm pos. idx.
+            n_forward, n_backward = 2, 2  # buffer around orig. gterm pos. idx.
+            pred_gterms = []
+            for i, gterm in enumerate(gterms_list):
+                if len(g_w_indices) > 0 and i < len(g_w_indices):
+                    idx = g_w_indices[i]
+                    if gterm in pred_list[idx-n_backward:idx+n_forward]:
+                        # if ref == "wrong_ref" and gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+                        #     print("pred: ", gterm)
+                        pred_gterms.append(gterm)
+                # else:
+                #     if gterm in pred_list:
+                #         pred_gterms.append(gterm)
+
+
+            # pred_gterms = []
+            # for gterm in gterms_list:
+            #     if gterm in pred_list:
+            #         i = pred_list.index(gterm)
+            #         pred_gterms.append(i)
+
+            # pred_op_gterms = []
+            # for gterm in op_gterms_list:
+            #     if gterm in pred_list:
+            #         i = pred_list.index(gterm)
+            #         pred_op_gterms.append(i)
+
+            # # Bentivogli et al.
+            # pred_gterms = []
+            # for term in gterms_list:
+            #     if term in pred_list:
+            #         pred_gterms.append(term)
+
+            # compute accuracy
+            acc = len(pred_gterms) / len(gterms_list)    
+            # acc_op = len(pred_op_gterms) / len(op_gterms_list)  
+            # print(acc, acc_op)
+            n_pred.append(len(gterms_list))
+            n_corr.append(len(pred_gterms)) 
+            pred_gterms_all.extend(pred_gterms) 
+
+            # print()
+            # if ref=="correct_ref" and gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+            #     if len(pred_gterms) > 0:
+            #         print(pred_list[pred_gterms[0]])
+                # print(pred)
+                # print(gterms)
+                # print(op_gterms)
+                # print(acc)
+            # #     print(ref)
+            # #     print(gterms_list)
+            # #     print(op_gterms_list)
+            # #     print(acc, acc_op)
+            #     print(pred_list)
+            #     print(gterms_list)
+
+            accuracies_total.append(acc)
+            # op_accuracies_total.append(acc_op)
+            # if gender_set == "feminine" and (sl == "it" or tl =="it"):
+            #    print(acc)
+            if speaker.replace("\n", "").lower() == "she":
+                accuracies_f_speaker.append(acc)
+            if speaker.replace("\n", "").lower() == "he":
+                accuracies_m_speaker.append(acc)
+            # gender of referred entity
+            if "1" in category.replace("\n", ""):
+                accuracies_1.append(acc)
+            if "2" in category.replace("\n", ""):
+                accuracies_2.append(acc)
+
+            if speaker.replace("\n", "").lower() == "she" and "1" in category.replace("\n", ""):
+                accuracies_f_speaker_1.append(acc)
+            if speaker.replace("\n", "").lower() == "she" and "2" in category.replace("\n", ""):
+                accuracies_f_speaker_2.append(acc)
+            if speaker.replace("\n", "").lower() == "he" and "1" in category.replace("\n", ""):
+                accuracies_m_speaker_1.append(acc)
+            if speaker.replace("\n", "").lower() == "he" and "2" in category.replace("\n", ""):
+                accuracies_m_speaker_2.append(acc)
+
+        # if ref == "correct_ref" and gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+        # if ref == "wrong_ref" and gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+        if gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+            print(f"tgt file: {raw_path}/{ref}/{gender_set}/{sl}-{tl}.t")
+            print(pred_gterms, gterms_list)
+            print(np.average(accuracies_total))
+            # print(np.average(op_accuracies_total))
+            print("new: ", sum(n_corr)/sum(n_pred))
+            print(sum(n_pred), sum(n_corr))
+            print(len(pred_gterms_all))
+            print()
+
+        if len(accuracies_total) == 0:
+            accuracies_total.append(0)
+        if len(accuracies_1) == 0:
+            accuracies_1.append(0)
+        if len(accuracies_2) == 0:
+            accuracies_2.append(0)
+        if len(accuracies_f_speaker) == 0:
+            accuracies_f_speaker.append(0)
+        if len(accuracies_m_speaker) == 0:
+            accuracies_m_speaker.append(0)
+        if len(accuracies_f_speaker_1) == 0:
+            accuracies_f_speaker_1.append(0)
+        if len(accuracies_f_speaker_2) == 0:
+            accuracies_f_speaker_2.append(0)
+        if len(accuracies_m_speaker_1) == 0:
+            accuracies_m_speaker_1.append(0)
+        if len(accuracies_m_speaker_2) == 0:
+            accuracies_m_speaker_2.append(0)
+
+    return accuracies_total, accuracies_1, accuracies_2, accuracies_f_speaker, accuracies_m_speaker, \
+        accuracies_f_speaker_1, accuracies_f_speaker_2, accuracies_m_speaker_1, accuracies_m_speaker_2
+
+
+def get_accuracies_mustshe_old2(raw_path, pred_path, ref, gender_set, f, sl, tl, pl):
+
+    l = tl
+    if tl == "en":
+        l = sl
+    
+    gterms_file = open(f"{raw_path}/{ref}/{gender_set}/annotation/{l}_gterms.csv", "r", encoding="utf-8")
+    if ref == "correct_ref":
+        op_gterms_file = open(f"{raw_path}/wrong_ref/{gender_set}/annotation/{l}_gterms.csv", "r", encoding="utf-8")
+    else:
+        op_gterms_file = open(f"{raw_path}/correct_ref/{gender_set}/annotation/{l}_gterms.csv", "r", encoding="utf-8")
+    speaker_file = open(f"{raw_path}/{ref}/{gender_set}/annotation/{l}_speaker.csv", "r", encoding="utf-8")
+    category_file = open(f"{raw_path}/{ref}/{gender_set}/annotation/{l}_category.csv", "r", encoding="utf-8")
+    
+    # target reference file (correct/wrong)
+    tref_file = open(f"{raw_path}/{ref}/{gender_set}/{sl}-{tl}.t", "r", encoding="utf-8")
+    # print(f"tgt file: {raw_path}/{ref}/{gender_set}/{sl}-{tl}.t")
+
+    # swapped "opposite" target reference
+    if ref == "correct_ref":
+        op_tref_file = open(f"{raw_path}/wrong_ref/{gender_set}/{sl}-{tl}.t", "r", encoding="utf-8")
+        # print(f"op. tgt file: {raw_path}/wrong_ref/{gender_set}/{sl}-{tl}.t")
+    else:
+        op_tref_file = open(f"{raw_path}/correct_ref/{gender_set}/{sl}-{tl}.t", "r", encoding="utf-8")
+        # print(f"op. tgt file: {raw_path}/correct_ref/{gender_set}/{sl}-{tl}.t")
+
+    # pred file
+    if pl == None:
+        # pred_file = open(f"{pred_path}/correct_ref/{gender_set}/{f}", "r", encoding="utf-8")
+        pred_file = open(f"{pred_path}/{ref}/{gender_set}/{f}", "r", encoding="utf-8")
+        if gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+            print(f"pred file: {pred_path}/{ref}/{gender_set}/{f}")
+    else:
+        # pred_file = open(f"{pred_path}/pivot/correct_ref/{gender_set}/{sl}-{pl}-{tl}.real.pivotout.t.pt", "r", encoding="utf-8")
+        pred_file = open(f"{pred_path}/pivot/{ref}/{gender_set}/{sl}-{pl}-{tl}.real.pivotout.t.pt", "r", encoding="utf-8")
+        if gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+            print(f"pred file: {pred_path}/pivot/{ref}/{gender_set}/{sl}-{pl}-{tl}.real.pivotout.t.pt")
+
+    accuracies_total = []
+    accuracies_1 = []
+    accuracies_2 = []
+    accuracies_f_speaker = []
+    accuracies_m_speaker = []
+    accuracies_f_speaker_1 = []
+    accuracies_f_speaker_2 = []
+    accuracies_m_speaker_1 = []
+    accuracies_m_speaker_2 = []
+
+    n_pred = []
+    n_corr = []
+
+    if tl != "en":
+        for tref, op_tref, pred, gterms, op_gterms, speaker, category in zip(tref_file, op_tref_file, pred_file, gterms_file, op_gterms_file, speaker_file, category_file):
+            tref_ = tref.strip()
+            op_tref_ = op_tref.strip()
+            gterms_list = gterms.split()
+            op_gterms_list = op_gterms.split()
+
+            # correct reference
+            if tref_ in [e.strip() for e in corrected_references[l].keys()]:
+                tref = corrected_references[l][tref_]
+            if op_tref_ in [e.strip() for e in corrected_references[l].keys()]:
+                op_tref = corrected_references[l][op_tref_]
+
+            if tref_ in [e.strip() for e in corrected_gterms[l].keys()]:
+                # correct gender terms
+                gterms_list = corrected_gterms[l][tref_].split()
+            
+            punctuation_marks = [".", ",", "!", "?", ":", ";", "¿", "¡", "\"", "\n", "(", ")", "...", "—", "«", "»"]
+            for p_mark in punctuation_marks:
+                tref = tref.replace(p_mark, " ")
+                op_tref = op_tref.replace(p_mark, " ")
+                pred = pred.replace(p_mark, " ")
+            tref_list = tref.split()
+            op_tref_list = op_tref.split()
+            pred_list = pred.split()
+             
+            # apply upperbound to gender terms, to prevent rewarding over-generated terms
+            # gterms_list = list(set(gterms_list))
+
+            keep_expr = ["un", "une", "una", "l", "qu", "J", "j", "d", "D", "n", "N"]
+            tref_list_ = []
+            for t in tref_list:
+                split_tok = re.split('\'', t)
+                if len(split_tok) > 1:
+                    no_keep = True
+                    for st in split_tok:
+                        if no_keep:
+                            for keep in keep_expr:
+                                if keep in st:
+                                    st += "'"
+                                    tref_list_.append(st)
+                                    no_keep = False
+                                    break
+                        else:
+                            tref_list_.append(st)
+                else:
+                    tref_list_.append(t)
+
+            op_tref_list_ = []
+            for t in op_tref_list:
+                split_tok = re.split('\'', t)
+                if len(split_tok) > 1:
+                    no_keep = True
+                    for st in split_tok:
+                        if no_keep:
+                            for keep in keep_expr:
+                                if keep in st:
+                                    st += "'"
+                                    op_tref_list_.append(st)
+                                    no_keep = False
+                                    break
+                        else:
+                            op_tref_list_.append(st)
+                else:
+                    op_tref_list_.append(t)
+
+            pred_list_ = []
+            for t in pred_list:
+                split_tok = re.split('\'', t)
+                if len(split_tok) > 1:
+                    no_keep = True
+                    for st in split_tok:
+                        if no_keep:
+                            for keep in keep_expr:
+                                if keep in st:
+                                    st += "'"
+                                    pred_list_.append(st)
+                                    no_keep = False
+                                    break
+                        else:
+                            pred_list_.append(st)
+                else:
+                    pred_list_.append(t)
+
+            tref_list = tref_list_
+            op_tref_list = op_tref_list_
+            pred_list = pred_list_
+
+            # print("tref:    ", tref)
+            # print("op_tref: ", op_tref)
+            # print("pred:    ", pred)
+            # print()
+
+            # g_w_indices = []
+            # for i, (tw, otw) in enumerate(zip(tref_list, op_tref_list)):
+            #     # check where correct and wrong ref. differ and store word index
+            #     if tw != otw:
+            #         # print(tw, otw)
+            #         g_w_indices.append(i)
+
+            # if len(g_w_indices) != len(gterms_list):
+            #     print("------")
+            #     print(tref_list)
+            #     print(op_tref_list)
+            #     print(len(g_w_indices))
+            #     print(gterms_list)
+            # if "Italoamericana" in tref_list:
+            #     print(tref_list)
+            #     print(pred_list)
+            #     print()
+            #     print("********")
+
+            # # check correct gterm with pred. words ~ gterm pos. idx.
+            # n_forward, n_backward = 1, 1  # buffer around orig. gterm pos. idx.
+            # pred_gterms = []
+            # for i, gterm in enumerate(gterms_list):
+            #     if len(g_w_indices) > 0:
+            #         idx = g_w_indices[i]
+            #         if gterm in pred_list[idx-n_backward:idx+n_forward]:
+            #             pred_gterms.append(gterm)
+            #     else:
+            #         if gterm in pred_list:
+            #             pred_gterms.append(gterm)
+
+
+            pred_gterms = []
+            for gterm in gterms_list:
+                if gterm in pred_list:
+                    i = pred_list.index(gterm)
+                    pred_gterms.append(i)
+
+            pred_op_gterms = []
+            for gterm in op_gterms_list:
+                if gterm in pred_list:
+                    i = pred_list.index(gterm)
+                    pred_op_gterms.append(i)
+
+            # # Bentivogli et al.
+            # pred_gterms = []
+            # for term in gterms_list:
+            #     if term in pred_list:
+            #         pred_gterms.append(term)
+
+            # compute accuracy
+            acc = len(pred_gterms) / len(gterms_list)    
+            acc_op = len(pred_op_gterms) / len(op_gterms_list)  
+
+            n_pred.append(len(gterms_list))
+            n_corr.append(len(pred_gterms))  
+
+            # print()
+            if gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+                if len(pred_gterms) > 0:
+                    print(pred_list[pred_gterms[0]])
+            # #     print(ref)
+            # #     print(gterms_list)
+            # #     print(op_gterms_list)
+            # #     print(acc, acc_op)
+            #     print(pred_list)
+            #     print(gterms_list)
+
+            accuracies_total.append(acc)
+            # if gender_set == "feminine" and (sl == "it" or tl =="it"):
+            #    print(acc)
+            if speaker.replace("\n", "").lower() == "she":
+                accuracies_f_speaker.append(acc)
+            if speaker.replace("\n", "").lower() == "he":
+                accuracies_m_speaker.append(acc)
+            # gender of referred entity
+            if "1" in category.replace("\n", ""):
+                accuracies_1.append(acc)
+            if "2" in category.replace("\n", ""):
+                accuracies_2.append(acc)
+
+            if speaker.replace("\n", "").lower() == "she" and "1" in category.replace("\n", ""):
+                accuracies_f_speaker_1.append(acc)
+            if speaker.replace("\n", "").lower() == "she" and "2" in category.replace("\n", ""):
+                accuracies_f_speaker_2.append(acc)
+            if speaker.replace("\n", "").lower() == "he" and "1" in category.replace("\n", ""):
+                accuracies_m_speaker_1.append(acc)
+            if speaker.replace("\n", "").lower() == "he" and "2" in category.replace("\n", ""):
+                accuracies_m_speaker_2.append(acc)
+
+        if gender_set == "feminine" and (sl == "it" or tl =="it") and (sl == "fr" or tl =="fr") and pl == None:
+            print(f"tgt file: {raw_path}/{ref}/{gender_set}/{sl}-{tl}.t")
+            print(pred_gterms, gterms_list)
+            print(np.average(accuracies_total))
+            print("new: ", sum(n_pred)/sum(n_corr))
+            print()
+
+        if len(accuracies_total) == 0:
+            accuracies_total.append(0)
+        if len(accuracies_1) == 0:
+            accuracies_1.append(0)
+        if len(accuracies_2) == 0:
+            accuracies_2.append(0)
+        if len(accuracies_f_speaker) == 0:
+            accuracies_f_speaker.append(0)
+        if len(accuracies_m_speaker) == 0:
+            accuracies_m_speaker.append(0)
+        if len(accuracies_f_speaker_1) == 0:
+            accuracies_f_speaker_1.append(0)
+        if len(accuracies_f_speaker_2) == 0:
+            accuracies_f_speaker_2.append(0)
+        if len(accuracies_m_speaker_1) == 0:
+            accuracies_m_speaker_1.append(0)
+        if len(accuracies_m_speaker_2) == 0:
+            accuracies_m_speaker_2.append(0)
+
+    return accuracies_total, accuracies_1, accuracies_2, accuracies_f_speaker, accuracies_m_speaker, \
+        accuracies_f_speaker_1, accuracies_f_speaker_2, accuracies_m_speaker_1, accuracies_m_speaker_2
+
+
+def get_accuracies_mustshe_old(raw_path, pred_path, ref, gender_set, f, sl, tl, pl):
 
     l = tl
     if tl == "en":
@@ -45,6 +900,7 @@ def get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl):
         pred_file = open(f"{pred_path}/{ref}/{gender_set}/{f}", "r", encoding="utf-8")
     else:
         pred_file = open(f"{pred_path}/pivot/{ref}/{gender_set}/{sl}-{pl}-{tl}.real.pivotout.t.pt", "r", encoding="utf-8")
+
 
     accuracies_total = []
     accuracies_1 = []
@@ -61,7 +917,9 @@ def get_accuracies_mustshe(raw_path, pred_path, ref, gender_set, f, sl, tl, pl):
         gterms_list = [t for t in gterms.split(" ") if (t != '' and t != '\n')]
         pred_list_ = pred.replace("\n", " ").replace(",", " ").replace(";", " ").replace(".", " ").replace("?", " ").replace("¿", " ").replace("!", " ").replace("¡", " ").replace("\"", " ").split(" ")
         src_list_ = src.replace("\n", " ").replace(",", " ").replace(";", " ").replace(".", " ").replace("?", " ").replace("¿", " ").replace("!", " ").replace("¡", " ").replace("\"", " ").split(" ")
-
+        print("src: ", src)
+        print("pred: ", pred)
+        print("gterms_list: ", gterms_list)
         # split words with apostrophe correctly, e.g., j'ai  -> j' ai
         pred_list = []
         for p in pred_list_:
@@ -1358,20 +2216,20 @@ def calc_and_store_results_avg_supervised_directions(results, raw_path, pred_pat
 
 def calc_1__diff_c_w(results, metric, translation, gender_set, lset, acc_type=None):
     if metric == "accuracy":
-        results[metric][translation][acc_type][gender_set]["diff_c_w"][lset] = np.round(results[metric][translation][acc_type][gender_set]["correct_ref"][lset] - \
-            results[metric][translation][acc_type][gender_set]["wrong_ref"][lset], 1)
+        results[metric][translation][acc_type][gender_set]["diff_c_w"][lset] = (np.round(results[metric][translation][acc_type][gender_set]["correct_ref"][lset] - \
+            results[metric][translation][acc_type][gender_set]["wrong_ref"][lset], 1)).item()
     else:
-        results[metric][translation][gender_set]["diff_c_w"][lset] = np.round(results[metric][translation][gender_set]["correct_ref"][lset] - \
-            results[metric][translation][gender_set]["wrong_ref"][lset], 1)
+        results[metric][translation][gender_set]["diff_c_w"][lset] = (np.round(results[metric][translation][gender_set]["correct_ref"][lset] - \
+            results[metric][translation][gender_set]["wrong_ref"][lset], 1)).item()
     return results
 
 def calc_2__sum_c_and_diff_c_w(results, metric, translation, gender_set, lset, acc_type=None):
     if metric == "accuracy":
-        results[metric][translation][acc_type][gender_set]["sum_c_and_diff_c_w"][lset] =  np.round(results[metric][translation][acc_type][gender_set]["correct_ref"][lset] + \
-            results[metric][translation][acc_type][gender_set]["diff_c_w"][lset], 1)
+        results[metric][translation][acc_type][gender_set]["sum_c_and_diff_c_w"][lset] = (np.round(results[metric][translation][acc_type][gender_set]["correct_ref"][lset] + \
+            results[metric][translation][acc_type][gender_set]["diff_c_w"][lset], 1)).item()
     else:
-        results[metric][translation][gender_set]["sum_c_and_diff_c_w"][lset] = np.round(results[metric][translation][gender_set]["correct_ref"][lset] + \
-            results[metric][translation][gender_set]["diff_c_w"][lset], 1)
+        results[metric][translation][gender_set]["sum_c_and_diff_c_w"][lset] = (np.round(results[metric][translation][gender_set]["correct_ref"][lset] + \
+            results[metric][translation][gender_set]["diff_c_w"][lset], 1)).item()
     return results
 
 def calc_3__f_m_of_all_c(results, metric, translation, lset, acc_type=None):
@@ -1380,8 +2238,8 @@ def calc_3__f_m_of_all_c(results, metric, translation, lset, acc_type=None):
             f_c = results[metric][translation][acc_type]["feminine"]["correct_ref"][lset]
             m_c = results[metric][translation][acc_type]["masculine"]["correct_ref"][lset]
             if f_c > 0 and m_c > 0: 
-                results[metric][translation][acc_type]["f_of_all_c"][lset] = np.round((f_c / (f_c + m_c)) * 100, 1)
-                results[metric][translation][acc_type]["m_of_all_c"][lset] = np.round((m_c / (f_c + m_c)) * 100, 1)
+                results[metric][translation][acc_type]["f_of_all_c"][lset] = np.round((f_c / (f_c + m_c)) * 100, 1).item()
+                results[metric][translation][acc_type]["m_of_all_c"][lset] = np.round((m_c / (f_c + m_c)) * 100, 1).item()
             else:
                 results[metric][translation][acc_type]["f_of_all_c"][lset] = 0.0
                 results[metric][translation][acc_type]["m_of_all_c"][lset] = 0.0
@@ -1389,8 +2247,8 @@ def calc_3__f_m_of_all_c(results, metric, translation, lset, acc_type=None):
         if lset != "sv_avg" or "sv_avg" in results[metric][translation]["feminine"]["correct_ref"]:
             f_c = results[metric][translation]["feminine"]["correct_ref"][lset]
             m_c = results[metric][translation]["masculine"]["correct_ref"][lset]
-            results[metric][translation]["f_of_all_c"][lset] = np.round((f_c / (f_c + m_c)) * 100, 1)
-            results[metric][translation]["m_of_all_c"][lset] = np.round((m_c / (f_c + m_c)) * 100, 1)
+            results[metric][translation]["f_of_all_c"][lset] = np.round((f_c / (f_c + m_c)) * 100, 1).item()
+            results[metric][translation]["m_of_all_c"][lset] = np.round((m_c / (f_c + m_c)) * 100, 1).item()
     return results
 
 def calc_4__diff_f_m_of_all_c(results, metric, translation, lset, acc_type=None):
@@ -1398,12 +2256,12 @@ def calc_4__diff_f_m_of_all_c(results, metric, translation, lset, acc_type=None)
         if lset != "sv_avg" or "sv_avg" in results[metric][translation][acc_type]["f_of_all_c"]:
             f_of_all_c = results[metric][translation][acc_type]["f_of_all_c"][lset]
             m_of_all_c = results[metric][translation][acc_type]["m_of_all_c"][lset]
-            results[metric][translation][acc_type]["diff_f_m_of_all_c"][lset] = np.round(f_of_all_c - m_of_all_c, 1)
+            results[metric][translation][acc_type]["diff_f_m_of_all_c"][lset] = np.round(f_of_all_c - m_of_all_c, 1).item()
     else:
         if lset != "sv_avg" or "sv_avg" in results[metric][translation]["f_of_all_c"]:
             f_of_all_c = results[metric][translation]["f_of_all_c"][lset]
             m_of_all_c = results[metric][translation]["m_of_all_c"][lset]
-            results[metric][translation]["diff_f_m_of_all_c"][lset] = np.round(f_of_all_c - m_of_all_c, 1)
+            results[metric][translation]["diff_f_m_of_all_c"][lset] = np.round(f_of_all_c - m_of_all_c, 1).item()
     return results
 
 def calc_5__tradeoff_metric_diff(results, metric, translation, lset, acc_type=None):
@@ -1411,14 +2269,14 @@ def calc_5__tradeoff_metric_diff(results, metric, translation, lset, acc_type=No
         if lset != "sv_avg" or "sv_avg" in results[metric][translation][acc_type]["feminine"]["sum_c_and_diff_c_w"]:
             f_sum_c_and_diff_c_w = results[metric][translation][acc_type]["feminine"]["sum_c_and_diff_c_w"][lset]
             m_sum_c_and_diff_c_w = results[metric][translation][acc_type]["masculine"]["sum_c_and_diff_c_w"][lset]
-            results[metric][translation][acc_type]["tquality_w_gender_performance"][lset] = np.round((f_sum_c_and_diff_c_w + m_sum_c_and_diff_c_w)/2 - \
-                abs(f_sum_c_and_diff_c_w - m_sum_c_and_diff_c_w), 1)
+            results[metric][translation][acc_type]["tquality_w_gender_performance"][lset] = (np.round((f_sum_c_and_diff_c_w + m_sum_c_and_diff_c_w)/2 - \
+                abs(f_sum_c_and_diff_c_w - m_sum_c_and_diff_c_w), 1)).item()
     else:
         if lset != "sv_avg" or "sv_avg" in results[metric][translation]["feminine"]["sum_c_and_diff_c_w"]:
             f_sum_c_and_diff_c_w = results[metric][translation]["feminine"]["sum_c_and_diff_c_w"][lset]
             m_sum_c_and_diff_c_w = results[metric][translation]["masculine"]["sum_c_and_diff_c_w"][lset]
-            results[metric][translation]["tquality_w_gender_performance"][lset] = np.round((f_sum_c_and_diff_c_w + m_sum_c_and_diff_c_w)/2 - \
-                abs(f_sum_c_and_diff_c_w - m_sum_c_and_diff_c_w), 1)
+            results[metric][translation]["tquality_w_gender_performance"][lset] = (np.round((f_sum_c_and_diff_c_w + m_sum_c_and_diff_c_w)/2 - \
+                abs(f_sum_c_and_diff_c_w - m_sum_c_and_diff_c_w), 1)).item()
     return results
     
 def export_results(results, metric, df, out_path, map_train_set_model_name, train_set, acc_type=None, avg_sv=False):
@@ -1907,7 +2765,7 @@ def main_mustshe():
     results = get_empty_results_dict()
     results = calc_and_store_results_per_lset(results, raw_path, pred_path)
     results = calc_and_store_results_avg_zeroshot_directions(results, raw_path, pred_path)
-    results = calc_and_store_results_avg_supervised_directions(results, raw_path, pred_path, train_set)
+    # results = calc_and_store_results_avg_supervised_directions(results, raw_path, pred_path, train_set)
 
     # export results
     # (1) all
@@ -1919,8 +2777,8 @@ def main_mustshe():
         "twoway.r32.q.new": "residual_EN",
         "twoway.SIM": "baseline_EN_AUX",
         "twoway.SIM.r32.q": "residual_EN_AUX",
-        "twoway.ADV": "baseline_EN_ADV",
-        "twoway.ADV.r32.q": "residual_EN_ADV",
+        "twoway.new.ADV": "baseline_EN_ADV_3",
+        "twoway.new.ADV.r32.q": "residual_EN_ADV_3",
         # "twoway.r32.q.ADV": "baseline_EN_ADV",
         # "twoway.r32.q.new.ADV": "residual_EN_ADV",
 
@@ -1944,27 +2802,15 @@ def main_mustshe():
         "twowayES.r32.q": "residual_ES_2",
         "twowayES.SIM": "baseline_ES_AUX_2",
         "twowayES.SIM.r32.q": "residual_ES_AUX_2",
-        "twowayES.ADV": "baseline_ES_ADV_2",
-        "twowayES.ADV.r32.q": "residual_ES_ADV_2",
+        "twowayES.new.ADV": "baseline_ES_ADV_3",
+        "twowayES.new.ADV.r32.q": "residual_ES_ADV_3",
 
         "twowayDE": "baseline_DE_2",
         "twowayDE.r32.q": "residual_DE_2",
         "twowayDE.SIM": "baseline_DE_AUX_2",
         "twowayDE.SIM.r32.q": "residual_DE_AUX_2",
-        "twowayDE.ADV": "baseline_DE_ADV_2",
-        "twowayDE.ADV.r32.q": "residual_DE_ADV_2",
-
-<<<<<<< Updated upstream
-        "twoway.new.ADV": "baseline_EN_ADV_3",
-        "twowayES.new.ADV": "baseline_ES_ADV_3",
         "twowayDE.new.ADV": "baseline_DE_ADV_3",
-        "twoway.new.ADV.r32.q": "residual_EN_ADV_3",
-        "twowayES.new.ADV.r32.q": "residual_ES_ADV_3",
         "twowayDE.new.ADV.r32.q": "residual_DE_ADV_3",
-=======
-        "twowayES.new.ADV": "baseline_ES_ADV_3",
-        "twowayDE.new.ADV": "baseline_DE_ADV_3",
->>>>>>> Stashed changes
     }
 
     # (2) BLEU

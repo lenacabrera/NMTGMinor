@@ -151,8 +151,9 @@ LOAD_FROM=$BASEDIR/model/${name}/model_for_probing/model.pt
 
 # *****************************************************
 # *** training classifier in combination with model ***
+# magic_str=$magic_str"-auxiliary_gender_classifier" 
 # magic_str=$magic_str"-gender_classifier_start_from 0" # 1
-# magic_str=$magic_str"-gradient_scale 0.1"
+magic_str=$magic_str" -gradient_scale 0.1"
 # magic_str=$magic_str"-gender_mid_layer_size 128"
 
 

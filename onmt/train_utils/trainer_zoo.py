@@ -730,11 +730,11 @@ class XEGenderTrainer(XETrainer):
                 optimizer = self.optim.optimizer
                 optimizer_classifier = self.optim2.optimizer
                 # use 2nd loss
-                alternate_training = (epoch >= opt.adversarial_classifier_start_from) if opt.adversarial_classifier is not None else \
-                    (epoch >= opt.gender_classifier_start_from)
+                alternate_training = (epoch >= opt.adversarial_classifier_start_from) if opt.adversarial_classifier is True else (epoch >= opt.gender_classifier_start_from)
 
                 # Normal MT loss
                 if not alternate_training or not optimize_classifier:
+                    print("(trainer_zoo.py) ~~~ normal MT loss")
                     # freeze classifier
                     self.model.generator[1].requires_grad_(False)
                     # unfreeze enc & dec
@@ -773,14 +773,17 @@ class XEGenderTrainer(XETrainer):
                         classifier_loss_data, classifier_loss_data_rev = 0, 0
 
                 elif alternate_training:
+                    print("(trainer_zoo.py) ~~~ alternate training")
                     # freeze enc & dec, only train classifier
                     self.model.generator[1].requires_grad_(True)
                     self.model.encoder.requires_grad_(False)
                     self.model.decoder.requires_grad_(False)
 
                     targets_classifier = batch.get('gen')
+                    print("(trainer_zoo.py) targets_classifier += 1, TODO check padding!!!")
+                    targets_classifier += 1  # TODO lena, account for padding with 0
 
-                    classifier_loss_dict = self.loss_function(outputs, targets=targets_classifier, # TODO lena, look into
+                    classifier_loss_dict = self.loss_function(outputs, targets=targets_classifier,
                                                               model=self.model,
                                                               gen_classifier=True,
                                                               reverse_landscape=False)
@@ -1018,7 +1021,7 @@ class XEGenderTrainer(XETrainer):
 
     def run(self, checkpoint=None):
         # TODO: This is a big bunch of copied code from the superclass
-
+        print("(trainer_zoo.py) Run...")
         opt = self.opt
         model = self.model
         # optim = self.optim
@@ -1026,7 +1029,6 @@ class XEGenderTrainer(XETrainer):
         if checkpoint is not None:
             self.model.load_state_dict(checkpoint['model'])
             prec_opt = checkpoint['opt'] if 'opt' in checkpoint else None
-
             if not opt.reset_optim:
                 print("* Loading optimizer states ... ")
                 self.optim.load_state_dict(checkpoint['optim'])
@@ -1062,31 +1064,27 @@ class XEGenderTrainer(XETrainer):
             init_model_parameters(model, opt)
             resume = False
             start_epoch = 1
-
         if opt.load_encoder_from:
             self.load_encoder_weight(opt.load_encoder_from)
 
         # if opt.load_decoder_from:
         #     self.load_decoder_weight(opt.load_decoder_from)
 
-        report_classifier = opt.gender_token_classifier is not None
+        report_classifier = opt.gender_classifier is not None
         report_confusion_matrix = opt.gender_token_classifier == 0
         # if we are on a GPU: warm up the memory allocator
         if self.cuda:
             self.warm_up()
-
             valid_loss, valid_clf_loss = self.eval(self.valid_data,
                                                    bidirectional_translation=self.opt.bidirectional_translation,
                                                    report_classifier=report_classifier,
                                                    report_cm=report_confusion_matrix)  # TODO lena, look into
             valid_ppl = math.exp(min(valid_loss, 100))
             print('Validation perplexity: %g, clf loss: %6.6f' % (valid_ppl, valid_clf_loss))
-
         self.start_time = time.time()
 
         for epoch in range(opt.start_epoch, opt.start_epoch + opt.epochs):
             print('')
-
             #  (1) train for one epoch on the training set
             train_loss = self.train_epoch(epoch, resume=resume, itr_progress=itr_progress)
             train_ppl = math.exp(min(train_loss, 100))

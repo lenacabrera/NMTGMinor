@@ -2,7 +2,7 @@
 # source ./config.sh
 
 export systemName=mustshe
-export TRAIN_SET=twoway.ADV  # {twoway, twowayES, twowayDE} + {.SIM, .ADV}
+export TRAIN_SET=twowayES.ADV  # {twoway, twowayES, twowayDE} + {.SIM, .ADV}
 
 export BASEDIR=$WORKDIR
 export LAYER=5
@@ -22,14 +22,13 @@ export MULTILAN=true
 export LAN_EMB=true
 export LAN_EMB_CONCAT=true
 
-export RESIDUAL_AT=3
-export RESIDUAL=2 #1: meanpool, 2: no residual
-
 export SKIP_PREPRO=true
 
 export FP16=true
-export MODEL=$TRANSFORMER.$PREPRO_DIR.r${RESIDUAL_AT}${RESIDUAL}.q${QUERY_AT}${QUERY}
-# export MODEL=$TRANSFORMER.$PREPRO_DIR
+export MODEL=$TRANSFORMER.$PREPRO_DIR
+
+# mkdir $BASEDIR/$MODEL
+# cp -R $BASEDIR/model/$systemName/prepro_20000_subwordnmt/$TRAIN_SET $BASEDIR/$MODEL
 
 export CLASSIFICATION_TYPE=0 # gender clf
 
@@ -40,7 +39,8 @@ echo 'Start training'
 
 mkdir $WORKDIR/model/${MODEL} -p
 
-for f in $DATADIR/$PREPRO_DIR/binarized_mmem/*; do
+# for f in $DATADIR/$PREPRO_DIR/binarized_mmem/*; do
+for f in $DATADIR/$systemName/prepro_20000_subwordnmt/twoway.GEN/binarized_mmem/*; do
         ln -s -f $f $WORKDIR/model/${MODEL}/$(basename -- "$fullfile")
 done
 
