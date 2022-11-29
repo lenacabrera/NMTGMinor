@@ -1,5 +1,5 @@
 model_name=transformer
-TRAIN_SET=twoway
+TRAIN_SET=twowayES
 prepro_name=mustshe/prepro_20000_subwordnmt/$TRAIN_SET.GEN
 
 S_LAN_MUSTC="cs|de|en|es|fr|it|nl|pt|ro|ru"

@@ -66,16 +66,16 @@ def check_correctness_of_gender_terms(raw_path, ref, gender_set, f, sl, tl, pl):
         op_tref_ = op_tref.strip()
         gterms_list = gterms.split()
 
-        # # correct reference
-        # if tref_ in [e.strip() for e in corrected_references[l].keys()]:
-        #     tref = corrected_references[l][tref_]
-        # if op_tref_ in [e.strip() for e in corrected_references[l].keys()]:
-        #     op_tref = corrected_references[l][op_tref_]
+        # correct reference
+        if tref_ in [e.strip() for e in corrected_references[l].keys()]:
+            tref = corrected_references[l][tref_]
+        if op_tref_ in [e.strip() for e in corrected_references[l].keys()]:
+            op_tref = corrected_references[l][op_tref_]
 
-        # if tref_ in [e.strip() for e in corrected_gterms[l].keys()]:
-        #     # correct gender terms
-        #     gterms_list = corrected_gterms[l][tref_].split()
-        #     print("corrected gterms_list: ", gterms_list)
+        if tref_ in [e.strip() for e in corrected_gterms[l].keys()]:
+            # correct gender terms
+            gterms_list = corrected_gterms[l][tref_].split()
+            print("corrected gterms_list: ", gterms_list)
 
         # # TODO: correct inconsistent data in MuST-SHE
         # # unede -> un, de

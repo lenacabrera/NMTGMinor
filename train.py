@@ -567,8 +567,6 @@ def main():
         else:
             raise NotImplementedError
 
-    # elif opt.gender_classifier:
-    #     aux_loss_function = CrossEntropyLossBase(output_size=3, label_smoothing=opt.label_smoothing)
     else:
         aux_loss_function = None
 
@@ -578,9 +576,6 @@ def main():
     if len(opt.gpus) > 1 or opt.virtual_gpu > 1:
         raise NotImplementedError("Multi-GPU training is not supported at the moment.")
     else:
-        # if opt.gender_classifier:
-        #     trainer = XEGenderTrainer(model, loss_function, train_data, valid_data, dicts, opt)
-        # elif not opt.adversarial_classifier:
         if not opt.adversarial_classifier:
             trainer = XETrainer(model, loss_function, train_data, valid_data, dicts, opt, True, aux_loss_function)
         else:

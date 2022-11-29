@@ -82,3 +82,9 @@ for ref in correct_ref wrong_ref; do
         rm $f
     done
 done
+
+
+
+# #  -> correct inconsistent mustshe instances
+# python3 -u $NMTDIR/utils/correct_inconsistent_mustshe_instances.py \
+#     -raw_path $DATADIR/mustshe/raw

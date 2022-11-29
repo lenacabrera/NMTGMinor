@@ -87,7 +87,7 @@ def build_tm_model(opt, dicts):
         if opt.gender_classifier_sent:
             gender_output_size = 2
         elif opt.gender_classifier_tok:
-            gender_output_size = 3 # TODO lena, 3 vs. 4? (4 = 3 + 1 bc of padding)
+            gender_output_size = 3
         else:
             raise NotImplementedError
         print("(model_factory.py) gender_output_size/num labels: ", gender_output_size)
@@ -95,7 +95,10 @@ def build_tm_model(opt, dicts):
         if opt.gender_token_classifier_at is not None and opt.gender_token_classifier_at != -1:
             gender_classifier_input_name = 'mid_layer_output'  # specified encoder layer
         else:
-            gender_classifier_input_name = 'context'   # encoder output
+            if opt.gender_classifier_sent:
+                gender_classifier_input_name = 'context_avgpool'
+            else:
+                gender_classifier_input_name = 'context'   # encoder output
 
         generators.append(onmt.modules.base_seq2seq.Classifier(hidden_size=opt.model_size,
                                                                output_size=gender_output_size,  # padding is 0

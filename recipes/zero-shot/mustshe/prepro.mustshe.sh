@@ -14,7 +14,7 @@ else
         PREPRO_TYPE=${PREPRO_TYPE}_subwordnmt
 fi
 PREPRO_DIR=prepro_${PREPRO_TYPE}
-TOKDIR=$DATADIR/mustshe/$PREPRO_DIR    # path to tokenized data
+TOKDIR=$DATADIR/mustshe/$PREPRO_DIR/$TRAIN_SET    # path to tokenized data
 
 mkdir -p $TOKDIR
 mkdir -p $TOKDIR/correct_ref

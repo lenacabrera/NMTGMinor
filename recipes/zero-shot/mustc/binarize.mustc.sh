@@ -1,8 +1,13 @@
 model_name=transformer
 prepro_name=mustc/prepro_20000_subwordnmt
-nway=twowayDE  # twoway, multiway, multiwayDE, multiwayESFRIT
+nway=multiwayES  # twoway, multiway, multiwayDE, multiwayESFRIT
 
 if [ $nway == twoway ]; then
+echo twoway
+    # english
+    S_LAN="cs|de|en|en|en|en|en|en|en|en|en|es|fr|it|nl|pt|ro|ru" # has to be sorted alphabetically
+    T_LAN="en|en|cs|de|es|fr|it|nl|pt|ro|ru|en|en|en|en|en|en|en"
+elif [ $nway == multiwayEN ]; then
 echo twoway
     # english
     S_LAN="cs|de|en|en|en|en|en|en|en|en|en|es|fr|it|nl|pt|ro|ru" # has to be sorted alphabetically

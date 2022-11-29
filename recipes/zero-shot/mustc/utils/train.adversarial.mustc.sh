@@ -182,6 +182,14 @@ python3 -u $NMTDIR/train.py \
 # twowayES.r32.q -> model_ppl_6.183620_e64.00.pt
 # twowayDE.r32.q -> model_ppl_7.067761_e64.00.pt
 
+
+# multiwayEN -> model_ppl_6.327135_e64.00.pt
+# multiwayES -> model_ppl_1.037427_e16.00.pt
+
+# multiwayEN.r32.q -> model_ppl_6.406044_e64.00.pt
+# multiwayES.r32.q -> model_ppl_1.038971_e18.00.pt
+
+
 cp $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log $BASEDIR/model/${name}/${DATE_AND_TIME}_train.log
 checkpoints=""
 

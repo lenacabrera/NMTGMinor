@@ -118,7 +118,6 @@ class MultiSourceEncoder(nn.Module):
         self.do_mixing = opt.mix_encoder_outputs
         self.enc_out_type = opt.enc_out_type
         self.language_classifier = opt.language_classifier
-        self.gender_classifier = opt.gender_classifier
 
     def forward(self, input, input_lang=None, **kwargs):
         if isinstance(input, list):  #self.training:  # training time, randomly choose
@@ -241,6 +240,8 @@ class TransformerEncoder(nn.Module):
         self.language_classifier_sent = opt.language_classifier_sent # not implemented yet?
 
         self.gender_classifier = opt.gender_classifier
+        self.gender_classifier_tok = opt.gender_classifier_tok
+        self.gender_classifier_sent = opt.gender_classifier_sent
         # self.gender_classifier_sent = opt.gender_classifier_sent # not implemented yet?
 
         self.token_classifier_at = opt.token_classifier_at

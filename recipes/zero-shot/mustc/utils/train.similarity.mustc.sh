@@ -169,7 +169,7 @@ python3 -u $NMTDIR/train.py \
         -sim_loss_type 11 \
         -aux_loss_weight 0.1 \
         -aux_loss_start_from 0 \
-        -load_from $BASEDIR/model/${name}/checkpoints/model_ppl_6.937025_e64.00.pt \
+        -load_from $BASEDIR/model/${name}/checkpoints/model_ppl_1.038971_e18.00.pt \
         $magic_str $gpu_string_train &> $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log
 
 # twoway -> model_ppl_4.960131_e64.00.pt
@@ -179,6 +179,13 @@ python3 -u $NMTDIR/train.py \
 # twoway.r32.q -> model_ppl_5.068066_e64.00.pt
 # twowayES.r32.q -> model_ppl_6.183620_e64.00.pt
 # twowayDE.r32.q -> model_ppl_7.067761_e64.00.pt
+
+# multiwayEN -> model_ppl_6.327135_e64.00.pt
+# multiwayES -> model_ppl_1.037427_e16.00.pt
+
+# multiwayEN.r32.q -> model_ppl_6.406044_e64.00.pt
+# multiwayES.r32.q -> model_ppl_1.038971_e18.00.pt
+
 
 
 cp $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log $BASEDIR/model/${name}/${DATE_AND_TIME}_train.log

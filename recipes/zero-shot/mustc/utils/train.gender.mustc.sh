@@ -126,7 +126,7 @@ fi
 # *****************************************************
 # *** training classifier for probing hidden states ***
 magic_str=$magic_str" -gender_classifier"
-magic_str=$magic_str" -gender_classifier_tok"  # -gender_classifier_tok   OR  -gender_classifier_sent
+magic_str=$magic_str" -gender_classifier_sent"  # -gender_classifier_tok   OR  -gender_classifier_sent
 # magic_str=$magic_str" -token_classifier $CLASSIFICATION_TYPE"  # --> TODO check occurrence of this param
 magic_str=$magic_str" -gender_token_classifier 0"
 magic_str=$magic_str" -gender_token_classifier_at -1" # -1: classifier input is encoder hidden states, i.e., last layer of encoder stack
@@ -165,7 +165,7 @@ batch_size_words=3584
 # $BATCH_SIZE=batch_size_words
 gender_mid_layer_size=128
 
-# --> other params config.
+# # --> other params config.
 # batch_size_mulitplier=2 # 8
 # batch_size_update=245 # 24568
 # batch_size=100 # 9999

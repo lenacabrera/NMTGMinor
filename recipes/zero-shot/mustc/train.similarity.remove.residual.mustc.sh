@@ -1,8 +1,8 @@
 #!/bin/bash
-source ../config.sh
+# source ../config.sh
 
 export systemName=mustc
-export TRAIN_SET=twoway  # twoway, twowayES, twowayDE
+export TRAIN_SET=multiwayES  # twoway, twowayES, twowayDE, multiwayES, multiwayDE
 
 export BASEDIR=$WORKDIR
 export LAYER=5

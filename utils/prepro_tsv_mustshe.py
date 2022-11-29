@@ -4,6 +4,16 @@ import sys
 from enum import Enum
 
 
+correct = {
+
+    "fr": {
+        "remove": "Quand ces gens ont regardé qui était le meilleur plieur de protéines au monde, ce n'était pas un professeur du MIT, ce n'était pas un étudiant de Caltech, c'était une personne d'Angleterre, de Manchester, un femme qui, pendant la journée, était assistant de direction dans une clinique de sevrage, et qui la nuit était le meilleur plieur de protéines au monde."
+    }
+    
+
+}
+
+
 class MODE(Enum):
     PARA_ID = 0  # parallel data, keep only identical sentences from orig data files
     PARA_POSTPROC = 1  # parallel data, non-identical sentences with same content are made identical (post-processed)
@@ -77,9 +87,14 @@ def extract_from_tsv(data_dir_path, correct_ref_dir_name, wrong_ref_dir_name):
                 if it_id == "NULL" or fr_id == "NULL" or es_id == "NULL":
                     continue
                 else:
-                    es_src = map_es[es_id][0]
-                    it_src = map_it[it_id][0]
-                    fr_src = map_fr[fr_id][0]
+                    if es_id in map_es:
+                        if it_id in map_it:
+                            if fr_id in map_fr:
+                                es_src = map_es[es_id][0]
+                                it_src = map_it[it_id][0]
+                                fr_src = map_fr[fr_id][0]
+                            else:
+                                continue
 
                     if es_src == it_src == fr_src:
                         par_es_c.write(map_es[es_id][1] + "\n")
@@ -148,7 +163,14 @@ def create_dict(mode, in_file, c_ref_dir, w_ref_dir, sl, tl):
     for row in read_tsv_tl:
         src = row[4]
         ref = row[5]
+
         ref_wrong = row[6]
+
+        if tl == "fr":
+            if ref_wrong in correct["fr"]["remove"]:
+                # skip this, as wrong ref. is faulty in orig. MuST-SHE
+                continue
+
         speaker_gender = row[8]
         category = row[9]
         gender_terms = row[12]

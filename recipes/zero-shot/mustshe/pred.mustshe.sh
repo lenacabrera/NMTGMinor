@@ -2,9 +2,9 @@
 source ./recipes/zero-shot/config.sh
 set -eu
 
-export MODEL=$1 # model name
-export TRAIN_SET=$2
-export EVAL_SET=$3
+export MODEL=$1 # model name, e.g. transformer.mustc
+export TRAIN_SET=$2         # e.g. twoway.SIM
+export EVAL_SET=$3          # e.g. twoway
 export PREPRO_DIR=prepro_20000_subwordnmt
 
 if [ -z "$EVAL_SET" ]; then
@@ -12,7 +12,7 @@ if [ -z "$EVAL_SET" ]; then
 fi
 
 LAN="en es it fr"
-# LAN="en it"
+# LAN="fr it"
 
 mkdir $OUTDIR/$MODEL/mustshe -p
 mkdir $OUTDIR/$MODEL/mustshe/$TRAIN_SET -p
@@ -28,7 +28,7 @@ mkdir $OUTDIR/$MODEL/mustshe/$TRAIN_SET/wrong_ref/masculine -p
 # compare results for correct and wrong reference to determine bias
 for ref in correct_ref wrong_ref; do  
     for gender_set in all feminine masculine; do
-        for sl in $LAN; do
+        for sl in en; do
             for tl in $LAN; do
                 if [[ ! "$sl" == "$tl" ]]; then
 
@@ -65,7 +65,9 @@ for ref in correct_ref wrong_ref; do
                 
                     echo '===========================================' $sl $tl
                     # Evaluate against original reference  
+                    echo $DATADIR/mustshe/raw/$ref/$gender_set/$sl-$tl.t
                     cat $out.pt | sacrebleu $DATADIR/mustshe/raw/$ref/$gender_set/$sl-$tl.t > $OUTDIR/$MODEL/mustshe/$TRAIN_SET/$ref/$gender_set/$sl-$tl.res
+                    # cat $out.pt | sacrebleu $DATADIR/mustshe/raw/$ref/$gender_set/$tl-$sl.s > $OUTDIR/$MODEL/mustshe/$TRAIN_SET/$ref/$gender_set/$sl-$tl.res
                     cat $OUTDIR/$MODEL/mustshe/$TRAIN_SET/$ref/$gender_set/$sl-$tl.res
                 
                 fi

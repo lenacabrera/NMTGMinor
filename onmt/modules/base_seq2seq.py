@@ -184,8 +184,12 @@ class Classifier(nn.Module):
 
     # def forward(self, input, log_softmax=True):
     def forward(self, output_dicts, hidden_name='hidden'):
-
-        classifier_input = output_dicts[self.input_name]
+        if self.input_name == "context_avgpool":
+            context = output_dicts["context"]
+            context_avg = torch.mean(context, dim=0, keepdim=True)
+            classifier_input = context_avg
+        else:
+            classifier_input = output_dicts[self.input_name]
         fix_norm = self.fix_norm
 
         if self.training:

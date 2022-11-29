@@ -12,7 +12,7 @@ if [ -z "$EVAL_SET" ]; then
     EVAL_SET=twoway
 fi
 
-LAN="en es it fr"
+LAN="it fr"
 
 mkdir $OUTDIR/$MODEL/mustshe/$TRAIN_SET -p
 mkdir $OUTDIR/$MODEL/mustshe/$TRAIN_SET/pivot -p

@@ -198,10 +198,8 @@ def collect_fn(src_data, tgt_data,
             tensors['targets_target_lang'] = out_tensor
 
     if gen_data is not None:
-        if not token_level_gen:           
-            # combine all sentence labels.. # TODO, lena
-            print("(dataset.py) sentence-level labels are not yet implemented!")
-            raise NotImplementedError
+        if not token_level_gen:   
+            # sentence-level labels      
             tensors['gen'] = torch.cat(gen_data).long()  # concat gender labels of entire batch
         else:
             tensors['gen'] = gen_data
@@ -215,8 +213,6 @@ def collect_fn(src_data, tgt_data,
                     out_tensor[max_seq_len - curr_seq_len + j, 0] = v + 1
                 out_tensors.append(out_tensor)
             tensors['gen'] = torch.squeeze(torch.stack(out_tensors)).T
-            # print("TODO lena: check padding!!!")
-            # print("(dataset.py) tensors['gen']: ", tensors['gen'])
 
     tensors['vocab_mask'] = vocab_mask
 

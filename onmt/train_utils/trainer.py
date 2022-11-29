@@ -11,6 +11,7 @@ import time
 import torch
 from apex import amp
 from torchmetrics import F1Score, Precision, Recall
+from torchmetrics.functional import accuracy
 
 import onmt
 import onmt.markdown
@@ -583,7 +584,7 @@ class XETrainer(BaseTrainer):
                     targets_classifier = batch.get('gen') 
 
                     classifier_loss_dict = self.loss_function(outputs, targets=targets_classifier, model=self.model,
-                                                              gen_classifier=True)
+                                                              gen_classifier=True, gen_classifier_sent=opt.gender_classifier_sent)
                     classifier_loss_data = classifier_loss_dict['data'] if classifier_loss_dict['data'] is not None else 0
                     total_adv_loss += classifier_loss_data
 
@@ -601,6 +602,10 @@ class XETrainer(BaseTrainer):
                         # probabilities per class (0: neuter, 1: masculine, 2: feminine)
                         logprobs_gen = outputs['logprobs_gen']
                         pred = logprobs_gen  # T, B, V
+
+                        if opt.gender_classifier_sent:
+                            pred = pred.squeeze()
+                            targets_classifier = targets_classifier.squeeze()
 
                         # argmax indices
                         pred_idx = torch.argmax(pred, dim=-1).cpu()  # T, B. starts from 0
@@ -654,18 +659,18 @@ class XETrainer(BaseTrainer):
 
                                 all_cnt.append(pred_cnt)
 
-                            if bidirectional_translation:
-                                for p in label_range:  # 1, 2, 3, 4
-                                    cur_label_indx = (targets_classifier_rev == p)
-                                    pred_val, pred_cnt = torch.unique(pred_idx_rev[cur_label_indx], return_counts=True)
-                                    if pred_val.shape[0] < num_labels:  # not all labels have been predicted
-                                        pred_cnt_padded = torch.zeros(num_labels, dtype=torch.long, device='cpu')
-                                        pred_cnt_padded[pred_val] = pred_cnt
-                                        pred_cnt = pred_cnt_padded
-                                    elif pred_val.shape[0] > num_labels:
-                                        raise ValueError('Some impossible label was predicted. Check your label esp. indexing.')
+                            # if bidirectional_translation:
+                            #     for p in label_range:  # 1, 2, 3, 4
+                            #         cur_label_indx = (targets_classifier_rev == p)
+                            #         pred_val, pred_cnt = torch.unique(pred_idx_rev[cur_label_indx], return_counts=True)
+                            #         if pred_val.shape[0] < num_labels:  # not all labels have been predicted
+                            #             pred_cnt_padded = torch.zeros(num_labels, dtype=torch.long, device='cpu')
+                            #             pred_cnt_padded[pred_val] = pred_cnt
+                            #             pred_cnt = pred_cnt_padded
+                            #         elif pred_val.shape[0] > num_labels:
+                            #             raise ValueError('Some impossible label was predicted. Check your label esp. indexing.')
 
-                                    all_cnt[p-1] += pred_cnt
+                            #         all_cnt[p-1] += pred_cnt
 
                             res_per_row = torch.stack(all_cnt, dim=0)
                             # print("(trainer.py) res_per_row: ", res_per_row)
@@ -688,18 +693,34 @@ class XETrainer(BaseTrainer):
                     n_tar_n = (_y_true.flatten() == 0).nonzero().size()[0]
                     n_tar_m = (_y_true.flatten() == 1).nonzero().size()[0]
                     n_tar_f = (_y_true.flatten() == 2).nonzero().size()[0]
-                    f1 = F1Score(num_classes=3, average="none")(_y_true, _y_pred)
-                    f1_w = F1Score(num_classes=3, average="weighted")(_y_true, _y_pred)
-                    precision = Precision(num_classes=3, average="none")(_y_true, _y_pred)
-                    recall = Recall(num_classes=3, average="none")(_y_true, _y_pred)
+
+                    num_classes = None
+                    if opt.gender_classifier_tok:
+                        num_classes = 3
+                    else:
+                        num_classes=2
+
+                    f1 = F1Score(num_classes=num_classes, average="none")(_y_true, _y_pred)
+                    f1_w = F1Score(num_classes=num_classes, average="weighted")(_y_true, _y_pred)
+                    precision = Precision(num_classes=num_classes, average="none")(_y_true, _y_pred)
+                    recall = Recall(num_classes=num_classes, average="none")(_y_true, _y_pred)
                     print('Classifier accuracy (n m f)  ', (n_cor_n + n_cor_m + n_cor_f) / (n_tar_n + n_tar_m + n_tar_f))
-                    print('Classifier accuracy (m f)    ', (n_cor_m + n_cor_f) / (n_tar_m + n_tar_f))
-                    print('Classifier accuracy (m)      ', n_cor_m / n_tar_m)
-                    print('Classifier accuracy (f)      ', n_cor_f / n_tar_f)
-                    print('Classifier Precision (n/m/f) ', precision[0].item(), precision[1].item(), precision[2].item())
-                    print('Classifier Recall (n/m/f)    ', recall[0].item(), recall[1].item(), recall[2].item())
-                    print('Classifier F1 score (n/m/f)  ', f1[0].item(), f1[1].item(), f1[2].item())
-                    print('Classifier F1 score (n/m/f)  ', f1_w.item())
+
+                    if opt.gender_classifier_tok:
+                        # print('Classifier accuracy (m f)    ', (n_cor_m + n_cor_f) / (n_tar_m + n_tar_f))
+                        # print('Classifier accuracy (m)      ', n_cor_m / n_tar_m)
+                        # print('Classifier accuracy (f)      ', n_cor_f / n_tar_f)
+                        print('Classifier accuracy (n/m/f)  ', torch.true_divide(cm[0][0], cm[0].sum()).item(), torch.true_divide(cm[1][1], cm[1].sum()).item(), torch.true_divide(cm[2][2], cm[2].sum()).item())
+                        print('Classifier F1 score (n/m/f)  ', f1[0].item(), f1[1].item(), f1[2].item())
+
+                        print('Classifier Precision (n/m/f) ', precision[0].item(), precision[1].item(), precision[2].item())
+                        print('Classifier Recall (n/m/f)    ', recall[0].item(), recall[1].item(), recall[2].item())
+                        print('Classifier w. F1  (n/m/f)    ', f1_w.item())
+
+                    else:
+                        print('Classifier accuracy (m/f)  ', torch.true_divide(cm[0][0], cm[0].sum()).item(), torch.true_divide(cm[1][1], cm[1].sum()).item())
+                        print('Classifier F1 score (m/f)  ', f1[0].item(), f1[1].item())
+                        print('Classifier w. F1  (n/m/f)    ', f1_w.item())
 
                 if report_cm:
                     print(cm.cpu().numpy())

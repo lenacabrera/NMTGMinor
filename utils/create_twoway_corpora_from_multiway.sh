@@ -25,6 +25,11 @@ mkdir -p $DATADIR/mustc/prepro_20000_subwordnmt/multiwayDE
 mkdir -p $DATADIR/mustc/prepro_20000_subwordnmt/multiwayDE/train
 mkdir -p $DATADIR/mustc/prepro_20000_subwordnmt/multiwayDE/valid
 
+out_path_EN=$DATADIR/mustc/prepro_20000_subwordnmt/multiwayEN
+mkdir -p $DATADIR/mustc/prepro_20000_subwordnmt/multiwayEN
+mkdir -p $DATADIR/mustc/prepro_20000_subwordnmt/multiwayEN/train
+mkdir -p $DATADIR/mustc/prepro_20000_subwordnmt/multiwayEN/valid
+
  for set in train valid; do
 
      # es

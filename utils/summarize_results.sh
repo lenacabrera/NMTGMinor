@@ -30,15 +30,15 @@ small_residual_EN_ADV="multiwayEN.ADV.r32.q"
 
 small_train_b_en="${small_baseline_EN} ${small_baseline_EN_AUX} ${small_baseline_EN_ADV}"
 small_train_r_en="${small_residual_EN} ${small_residual_EN_AUX} ${small_residual_EN_ADV}"
-small_train_en="${small_twoway_b_en} ${small_twoway_r_en}"
+small_train_en="${small_train_b_en} ${small_train_r_en}"
 
 # twoway
 baseline_EN="twoway.r32.q"
 residual_EN="twoway.r32.q.new"
 baseline_EN_AUX="twoway.SIM"
 residual_EN_AUX="twoway.SIM.r32.q"
-baseline_EN_ADV="twoway.new.ADV"
-residual_EN_ADV="twoway.new.ADV.r32.q"
+baseline_EN_ADV="twoway.new.ADV" # "twoway.ADV.GEN"
+residual_EN_ADV="twoway.new.ADV.r32.q" # "twoway.ADV.GEN.r32.q"
 
 baseline_ES="twowayES"
 residual_ES="twowayES.r32.q"
@@ -70,8 +70,10 @@ train_twoway="${train_twoway_en} ${train_twoway_es} ${train_twoway_de}"
 train_sets="${train_twoway}"
 
 # # *** mustshe ***
-# for train_set in $baseline_EN; do
-for train_set in $train_sets; do
+# for train_set in $residual_EN_ADV; do  # residual_EN_AUX
+# for train_set in $train_twoway_en $train_twoway_es; do
+# for train_set in $train_sets; do
+for train_set in $train_twoway_en; do
     echo $train_set
     python3 -u $NMTDIR/utils/prep_results.py \
             -raw_path $DATADIR/mustshe/raw \
@@ -84,53 +86,53 @@ for train_set in $train_sets; do
 done
 
 
-# # *** mustc ***
-TEST_SET="mustc"
-for train_set in $train_sets; do
-    path=$OUTDIR/$MODEL/$TEST_SET/$train_set/
-    path_pivot=$OUTDIR/$MODEL/$TEST_SET/$train_set/pivot
-    echo $train_set
-    # direct
-    out_exp=/home/lperez/output/$train_set/$TEST_SET/direct
-    rm -fr $out_exp
-    mkdir -p $out_exp
-    for f in $path/*\.pt; do
-            cp $f $out_exp
-    done
-    # pivot
-    out_exp_piv=/home/lperez/output/$train_set/$TEST_SET/pivot
-    rm -fr $out_exp_piv
-    mkdir -p $out_exp_piv
-    for f in $path_pivot/*\.pt; do
-            cp $f $out_exp_piv
-    done
+# # # *** mustc ***
+# TEST_SET="mustc"
+# for train_set in $train_sets; do
+#     path=$OUTDIR/$MODEL/$TEST_SET/$train_set/
+#     path_pivot=$OUTDIR/$MODEL/$TEST_SET/$train_set/pivot
+#     echo $train_set
+#     # direct
+#     out_exp=/home/lperez/output/$train_set/$TEST_SET/direct
+#     rm -fr $out_exp
+#     mkdir -p $out_exp
+#     for f in $path/*\.pt; do
+#             cp $f $out_exp
+#     done
+#     # pivot
+#     out_exp_piv=/home/lperez/output/$train_set/$TEST_SET/pivot
+#     rm -fr $out_exp_piv
+#     mkdir -p $out_exp_piv
+#     for f in $path_pivot/*\.pt; do
+#             cp $f $out_exp_piv
+#     done
         
-    if [[ $TEST_SET == "mustc" ]]; then
-        # direct
-        out=/home/lperez/output/results_${TEST_SET}_${train_set}.csv
-        rm -f $out
-        for f in $path/*\.res; do
-            while read -r line; do 
-                if [[ $line == "\"score"* ]]; then
-                    filename="$(basename "$f")"
-                    [[ ${filename} =~ [a-z][a-z]-[a-z][a-z] ]] && set=$BASH_REMATCH
-                    [[ ${line:9:4} =~ ^.[0-9]*.[0-9]* ]] && score=$BASH_REMATCH
-                    echo "$set;$score" >> $out
-                fi
-            done < $f
-        done
-        # pivot
-        out_piv=/home/lperez/output/results_${TEST_SET}_${train_set}_pivot.csv
-        rm -f $out_piv
-        for f in $path_pivot/*\.res; do
-            while read -r line; do 
-                if [[ $line == "\"score"* ]]; then
-                    filename="$(basename "$f")"
-                    [[ ${filename} =~ [a-z][a-z]-[a-z][a-z]-[a-z][a-z] ]] && set=$BASH_REMATCH
-                    [[ ${line:9:4} =~ ^.[0-9]*.[0-9]* ]] && score=$BASH_REMATCH
-                    echo "$set;$score" >> $out_piv
-                fi
-            done < $f
-        done
-    fi
-done
+#     if [[ $TEST_SET == "mustc" ]]; then
+#         # direct
+#         out=/home/lperez/output/results_${TEST_SET}_${train_set}.csv
+#         rm -f $out
+#         for f in $path/*\.res; do
+#             while read -r line; do 
+#                 if [[ $line == "\"score"* ]]; then
+#                     filename="$(basename "$f")"
+#                     [[ ${filename} =~ [a-z][a-z]-[a-z][a-z] ]] && set=$BASH_REMATCH
+#                     [[ ${line:9:4} =~ ^.[0-9]*.[0-9]* ]] && score=$BASH_REMATCH
+#                     echo "$set;$score" >> $out
+#                 fi
+#             done < $f
+#         done
+#         # pivot
+#         out_piv=/home/lperez/output/results_${TEST_SET}_${train_set}_pivot.csv
+#         rm -f $out_piv
+#         for f in $path_pivot/*\.res; do
+#             while read -r line; do 
+#                 if [[ $line == "\"score"* ]]; then
+#                     filename="$(basename "$f")"
+#                     [[ ${filename} =~ [a-z][a-z]-[a-z][a-z]-[a-z][a-z] ]] && set=$BASH_REMATCH
+#                     [[ ${line:9:4} =~ ^.[0-9]*.[0-9]* ]] && score=$BASH_REMATCH
+#                     echo "$set;$score" >> $out_piv
+#                 fi
+#             done < $f
+#         done
+#     fi
+# done

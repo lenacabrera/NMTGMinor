@@ -27,6 +27,8 @@ def main():
     num_femi = 0
     num_masc = 0
 
+    print(out_file)
+
     for text, labels in zip(text_file, label_file):
         word_labels = labels.split()
         word_idx = 0
@@ -80,6 +82,8 @@ def main():
             if i < len(tokens) - 1:
                 # print("space")
                 tok_labels_str += " "
+
+            # print(tok_labels_str)
 
         if len(tokens) != len(tok_labels_str.split()):
             print("Inconsistent lengths!")
