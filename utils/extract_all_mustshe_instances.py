@@ -8,6 +8,8 @@ import tqdm
 import random
 from mosestokenizer import MosesTokenizer
 
+random.seed(0)
+
 parser = argparse.ArgumentParser(description='extract_train_from_mustshe.py')
 parser.add_argument('-data_dir_path', required=True, default=None)
 
@@ -16,7 +18,6 @@ def extract_train_set_from_tsv():
     opt = parser.parse_args()
     file_path = opt.data_dir_path
 
-    # out_path = file_path + "train/"
     out_path = file_path
 
     tsv_file_es = open(os.path.join(file_path, "tsv/", "MONOLINGUAL.es_v1.2.tsv"), encoding='utf-8')
@@ -45,9 +46,11 @@ def extract_train_set_from_tsv():
         map_fr_cleaned = remove_test_instances(map_fr_ex, map_fr[gender_set])
         map_it_cleaned = remove_test_instances(map_it_ex, map_it[gender_set])
 
-        export_train_instances(map_es_cleaned, sl="en", tl="es", out_path=out_path, gender_set=gender_set)
-        export_train_instances(map_fr_cleaned, sl="en", tl="fr", out_path=out_path, gender_set=gender_set)
-        export_train_instances(map_it_cleaned, sl="en", tl="it", out_path=out_path, gender_set=gender_set)
+        map_es_final, es_val_indices = export_train_instances(map_es_cleaned, sl="en", tl="es", out_path=out_path, gender_set=gender_set)
+        map_fr_final, fr_val_indices = export_train_instances(map_fr_cleaned, sl="en", tl="fr", out_path=out_path, gender_set=gender_set)
+        map_it_final, it_val_indices = export_train_instances(map_it_cleaned, sl="en", tl="it", out_path=out_path, gender_set=gender_set)
+    
+    return map_es_final, map_fr_final, map_it_final, es_val_indices, fr_val_indices, it_val_indices
 
 
 def create_language_pair_dict_with_add_info(in_file):
@@ -157,25 +160,17 @@ def export_train_instances(map, sl, tl, out_path, gender_set):
 
     sl_out_file = open(os.path.join(out_path, f"train/{gender_set}/{sl}-{tl}.s"), "w", encoding='utf-8')
     tl_out_file = open(os.path.join(out_path, f"train/{gender_set}/{tl}-{sl}.s"), "w", encoding='utf-8')
-    # ctg_out_file = open(os.path.join(out_path, f"train/{gender_set}/annotation/{tl}_category.s"), "w", encoding='utf-8')
-    # spk_out_file = open(os.path.join(out_path, f"train/{gender_set}/annotation/{tl}_speaker.s"), "w", encoding='utf-8')
-    # gtrms_out_file = open(os.path.join(out_path, f"train/{gender_set}/annotation/{tl}_gterms.s"), "w", encoding='utf-8')
+
     gndr_out_file = open(os.path.join(out_path, f"train/{gender_set}/gen_label/sent/{tl}.s"), "w", encoding='utf-8') # sentence gender label
     gndr_labels_out_file = open(os.path.join(out_path, f"train/{gender_set}/gen_label/word/{tl}.s"), "w", encoding='utf-8') # word gender labels
     gndr_tok_labels_out_file = open(os.path.join(out_path, f"train/{gender_set}/gen_label/tok/{tl}.s"), "w", encoding='utf-8') # word gender labels
 
-    # alignment_out_file = open(os.path.join(out_path, f"valid/{gender_set}/annotation/{tl}_align.s"), "w", encoding='utf-8')
-
     sl_out_file_v = open(os.path.join(out_path, f"valid/{gender_set}/{sl}-{tl}.s"), "w", encoding='utf-8')
     tl_out_file_v = open(os.path.join(out_path, f"valid/{gender_set}/{tl}-{sl}.s"), "w", encoding='utf-8')
-    # ctg_out_file_v = open(os.path.join(out_path, f"valid/{gender_set}/annotation/{tl}_category.s"), "w", encoding='utf-8')
-    # spk_out_file_v = open(os.path.join(out_path, f"valid/{gender_set}/annotation/{tl}_speaker.s"), "w", encoding='utf-8')
-    # gtrms_out_file_v = open(os.path.join(out_path, f"valid/{gender_set}/annotation/{tl}_gterms.s"), "w", encoding='utf-8')
+
     gndr_out_file_v = open(os.path.join(out_path, f"valid/{gender_set}/gen_label/sent/{tl}.s"), "w", encoding='utf-8') # sentence gender label
     gndr_labels_out_file_v = open(os.path.join(out_path, f"valid/{gender_set}/gen_label/word/{tl}.s"), "w", encoding='utf-8')  # word gender labels
     gndr_tok_labels_out_file_v = open(os.path.join(out_path, f"valid/{gender_set}/gen_label/tok/{tl}.s"), "w", encoding='utf-8')  # word gender labels
-    
-    # alignment_out_file_v = open(os.path.join(out_path, f"valid/{gender_set}/annotation/{tl}_align.s"), "w", encoding='utf-8')
 
     for i, sl in enumerate(map["src"]):
         if i in valid_indices:
@@ -187,25 +182,6 @@ def export_train_instances(map, sl, tl, out_path, gender_set):
             tl_out_file_v.write(tl + '\n')
         else:
             tl_out_file.write(tl + '\n')
-    # for i, ctg in enumerate(map["category"]):
-    #     if i in valid_indices:
-    #         ctg_out_file_v.write(ctg + '\n')
-    #     else:
-    #         ctg_out_file.write(ctg + '\n')
-    # for i, spk in enumerate(map["speaker"]):
-    #     if i in valid_indices:
-    #         spk_out_file_v.write(spk + '\n')
-    #     else:
-    #         spk_out_file.write(spk + '\n')
-    # for i, gterms in enumerate(map["gterms"]):
-    #     if i in valid_indices:
-    #         for term in gterms:
-    #             gtrms_out_file_v.write(term + ' ')
-    #         gtrms_out_file_v.write('\n')    
-    #     else:
-    #         for term in gterms:
-    #             gtrms_out_file.write(term + ' ')
-    #         gtrms_out_file.write('\n')
     for i, gndr in enumerate(map["gender_sentence_label"]):
         if i in valid_indices:
             gndr_out_file_v.write(gndr + '\n')
@@ -217,91 +193,7 @@ def export_train_instances(map, sl, tl, out_path, gender_set):
         else:
             gndr_labels_out_file.write(gndr + '\n')
 
-    # tokenizer_sl = MosesTokenizer(f"{sl}")
-    # tokenizer_tl = MosesTokenizer(f"{tl}")
-    # i = 0
-    # for src, tgt in tqdm.tqdm(zip(map["src"], map["ref"])):
-    #     tokenized_src = tokenizer_sl(src)
-    #     tokenized_tgt = tokenizer_tl(tgt)
-    #     for tok in tokenized_src:
-    #         if i in valid_indices:
-    #             alignment_out_file_v.write(tok + " ")
-    #         else:
-    #             alignment_out_file.write(tok + " ")
-    #     if i in valid_indices:
-    #         alignment_out_file_v.write("||| ")
-    #     else:
-    #         alignment_out_file.write("||| ")
-    #     for tok in tokenized_tgt:
-    #         if i in valid_indices:
-    #             alignment_out_file_v.write(tok + " ")
-    #         else:
-    #             alignment_out_file.write(tok + " ")
-    #     if i in valid_indices:
-    #         alignment_out_file_v.write("\n")
-    #     else:
-    #         alignment_out_file.write("\n")
-        
-    #     i += 1
-
-
-    # tokenizer_sl = MosesTokenizer(f"{sl}")
-    # for i, sent in enumerate(map["src"]):
-    #     s_tok = tokenizer_sl(sent)
-    #     for tok in 
-
-
-
-    # TODO
-    # tokenizer_sl = MosesTokenizer(f"{sl}")
-    # for i, sent in enumerate(map["src"]):
-    #     # for each sentence...
-    #     s_tok_labels = ""
-    #     words = sent.split()
-    #     for j, w in enumerate(words):
-    #         # for each word...
-    #         w_gender = "0" # neuter
-    #         print(w)
-    #         if w in map["gterms"][i]:
-    #             if map["category"][i][1] == "M":
-    #                 # masculine
-    #                 w_gender = "1"
-    #             else:
-    #                 # feminine
-    #                 w_gender = "2"
-
-    #         w_tok = tokenizer_sl(w)
-    #         w_tok_labels = len(w_tok) * [w_gender]
-    #         for k, l in enumerate(w_tok_labels):
-    #             # for each token...
-    #             s_tok_labels += f"{l}"
-    #             if i < len(words) - 1:
-    #                 # not last word in sentence
-    #                 s_tok_labels += " "
-    #             else:
-    #                 if k < len(w_tok_labels) - 1:
-    #                     # not the last tok in last word
-    #                     s_tok_labels += " "
-    #                 else:
-    #                     continue
-                    
-    #         # print(s_tok_labels)
-            
-    #     map["gender_tok_labels"].append(s_tok_labels)
-
-    # for i, gndr in enumerate(map["gender_tok_labels"]):
-    #     if i in valid_indices:
-    #         gndr_tok_labels_out_file_v.write(gndr + '\n')
-    #     else:
-    #         gndr_tok_labels_out_file.write(gndr + '\n')
-
-    # sl_out_file.close()
-    # tl_out_file.close()
-    # ctg_out_file.close()
-    # spk_out_file.close()
-    # gtrms_out_file.close()
-    # alignment_out_file.close()
-
+    return map, valid_indices
 
 def word_level_gender_labels(map):
 
@@ -335,6 +227,87 @@ def word_level_gender_labels(map):
 
     return map
 
+def create_multiway_train_set(map_es, map_fr, map_it, es_val_indices, fr_val_indices, it_val_indices):
+
+    it_fr = {
+        "it": {
+            "ref": [],
+            "speaker": [],
+            "category": [],
+            "gterms": [],
+            "gender_sentence_label": [],
+            "gender_word_labels": [],
+            "gender_tok_labels": []
+        },
+        "fr": {
+            "ref": [],
+            "speaker": [],
+            "category": [],
+            "gterms": [],
+            "gender_sentence_label": [],
+            "gender_word_labels": [],
+            "gender_tok_labels": []
+        }
+    }
+
+    for i, s_en in enumerate(map_it["all"]["src"]):
+        if s_en in map_fr["all"]["src"]:
+            it_fr["it"]["ref"].append(map_it["all"]["ref"][i])
+            it_fr["it"]["speaker"].append(map_it["all"]["speaker"][i])
+            it_fr["it"]["category"].append(map_it["all"]["category"][i])
+            it_fr["it"]["gterms"].append(map_it["all"]["gterms"][i])
+            it_fr["it"]["gender_sentence_label"].append(map_it["all"]["gender_sentence_label"][i])
+            it_fr["it"]["gender_word_labels"].append(map_it["all"]["gender_word_labels"][i])
+            it_fr["it"]["gender_tok_labels"].append(map_it["all"]["gender_tok_labels"][i])
+
+            j = map_fr["all"]["ref"].index(s_en)
+            it_fr["fr"]["ref"].append(map_fr["all"]["ref"][j])
+            it_fr["fr"]["speaker"].append(map_fr["all"]["speaker"][j])
+            it_fr["fr"]["category"].append(map_fr["all"]["category"][j])
+            it_fr["fr"]["gterms"].append(map_fr["all"]["gterms"][j])
+            it_fr["fr"]["gender_sentence_label"].append(map_fr["all"]["gender_sentence_label"][j])
+            it_fr["fr"]["gender_word_labels"].append(map_fr["all"]["gender_word_labels"][j])
+            it_fr["fr"]["gender_tok_labels"].append(map_fr["all"]["gender_tok_labels"][j])
+
+    opt = parser.parse_args()
+    out_path = opt.data_dir_path
+
+    sl_out_file = open(os.path.join(out_path, f"train/all/{sl}-{tl}.s"), "w", encoding='utf-8')
+    tl_out_file = open(os.path.join(out_path, f"train/all/{tl}-{sl}.s"), "w", encoding='utf-8')
+
+    gndr_out_file = open(os.path.join(out_path, f"train/all/gen_label/sent/{tl}.s"), "w", encoding='utf-8') # sentence gender label
+    gndr_labels_out_file = open(os.path.join(out_path, f"train/all/gen_label/word/{tl}.s"), "w", encoding='utf-8') # word gender labels
+    gndr_tok_labels_out_file = open(os.path.join(out_path, f"train/all/gen_label/tok/{tl}.s"), "w", encoding='utf-8') # word gender labels
+
+    sl_out_file_v = open(os.path.join(out_path, f"valid/all/{sl}-{tl}.s"), "w", encoding='utf-8')
+    tl_out_file_v = open(os.path.join(out_path, f"valid/all/{tl}-{sl}.s"), "w", encoding='utf-8')
+
+    gndr_out_file_v = open(os.path.join(out_path, f"valid/all/gen_label/sent/{tl}.s"), "w", encoding='utf-8') # sentence gender label
+    gndr_labels_out_file_v = open(os.path.join(out_path, f"valid/all/gen_label/word/{tl}.s"), "w", encoding='utf-8')  # word gender labels
+    gndr_tok_labels_out_file_v = open(os.path.join(out_path, f"valid/all/gen_label/tok/{tl}.s"), "w", encoding='utf-8')  # word gender labels
+
+    for i, sl in enumerate(map_es["src"]):
+        if i in es_val_indices:
+            sl_out_file_v.write(sl + '\n')
+        else:
+            sl_out_file.write(sl + '\n')
+    for i, tl in enumerate(map_es["ref"]):
+        if i in es_val_indices:
+            tl_out_file_v.write(tl + '\n')
+        else:
+            tl_out_file.write(tl + '\n')
+    for i, gndr in enumerate(map_es["gender_sentence_label"]):
+        if i in es_val_indices:
+            gndr_out_file_v.write(gndr + '\n')
+        else:
+            gndr_out_file.write(gndr + '\n')
+    for i, gndr in enumerate(map_es["gender_word_labels"]):
+        if i in es_val_indices:
+            gndr_labels_out_file_v.write(gndr + '\n')
+        else:
+            gndr_labels_out_file.write(gndr + '\n')
+
 
 if __name__ == '__main__':
-    extract_train_set_from_tsv()
+    map_es, map_fr, map_it = extract_train_set_from_tsv()
+    create_multiway_train_set(map_es, map_fr, map_it)

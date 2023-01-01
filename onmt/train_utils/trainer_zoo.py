@@ -219,6 +219,7 @@ class XEAdversarialTrainer(XETrainer):
 
                         classifier_loss = classifier_loss_dict['loss'].div(
                             denom)  # a little trick to avoid gradient overflow with fp16
+                        # print("classifier_loss_data: ", classifier_loss_data)
                         classifier_loss_data = 0
                         classifier_loss_data_rev = classifier_loss_dict['data'] if classifier_loss_dict[
                                                                                    'data'] is not None else 0

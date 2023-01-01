@@ -707,9 +707,6 @@ class XETrainer(BaseTrainer):
                     print('Classifier accuracy (n m f)  ', (n_cor_n + n_cor_m + n_cor_f) / (n_tar_n + n_tar_m + n_tar_f))
 
                     if opt.gender_classifier_tok:
-                        # print('Classifier accuracy (m f)    ', (n_cor_m + n_cor_f) / (n_tar_m + n_tar_f))
-                        # print('Classifier accuracy (m)      ', n_cor_m / n_tar_m)
-                        # print('Classifier accuracy (f)      ', n_cor_f / n_tar_f)
                         print('Classifier accuracy (n/m/f)  ', torch.true_divide(cm[0][0], cm[0].sum()).item(), torch.true_divide(cm[1][1], cm[1].sum()).item(), torch.true_divide(cm[2][2], cm[2].sum()).item())
                         print('Classifier F1 score (n/m/f)  ', f1[0].item(), f1[1].item(), f1[2].item())
 

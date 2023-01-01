@@ -28,7 +28,7 @@ mkdir $OUTDIR/$MODEL/mustshe/$TRAIN_SET/wrong_ref/masculine -p
 # compare results for correct and wrong reference to determine bias
 for ref in correct_ref wrong_ref; do  
     for gender_set in all feminine masculine; do
-        for sl in en; do
+        for sl in $LAN; do
             for tl in $LAN; do
                 if [[ ! "$sl" == "$tl" ]]; then
 
@@ -65,9 +65,7 @@ for ref in correct_ref wrong_ref; do
                 
                     echo '===========================================' $sl $tl
                     # Evaluate against original reference  
-                    echo $DATADIR/mustshe/raw/$ref/$gender_set/$sl-$tl.t
                     cat $out.pt | sacrebleu $DATADIR/mustshe/raw/$ref/$gender_set/$sl-$tl.t > $OUTDIR/$MODEL/mustshe/$TRAIN_SET/$ref/$gender_set/$sl-$tl.res
-                    # cat $out.pt | sacrebleu $DATADIR/mustshe/raw/$ref/$gender_set/$tl-$sl.s > $OUTDIR/$MODEL/mustshe/$TRAIN_SET/$ref/$gender_set/$sl-$tl.res
                     cat $OUTDIR/$MODEL/mustshe/$TRAIN_SET/$ref/$gender_set/$sl-$tl.res
                 
                 fi

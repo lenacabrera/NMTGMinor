@@ -144,7 +144,7 @@ magic_str=$magic_str" -emb_dropout 0.0"
 # and we don't need to slowly warm up the LR
 WUS=400
 # 5 epochs should be enough (?)
-EPOCHS=5
+EPOCHS=100
 # -load_from should point to the trained model we want to analyze (e.g., the averaged model.pt or model_ppl_* checkpoint
 LOAD_FROM=$BASEDIR/model/${name}/model_for_probing/model.pt
 
@@ -155,6 +155,7 @@ LOAD_FROM=$BASEDIR/model/${name}/model_for_probing/model.pt
 # magic_str=$magic_str"-gender_classifier_start_from 0" # 1
 magic_str=$magic_str" -gradient_scale 0.1"
 # magic_str=$magic_str"-gender_mid_layer_size 128"
+magic_str=$magic_str" -early_stop_if_no_change $EPOCHS"
 
 
 # --> orig params below:
@@ -163,7 +164,11 @@ batch_size_update=24568
 batch_size=9999
 batch_size_words=3584
 # $BATCH_SIZE=batch_size_words
+gender_mid_layer_size=256
 gender_mid_layer_size=128
+# gender_mid_layer_size=64
+
+magic_str=$magic_str" -gender_mid_layer_size $gender_mid_layer_size"
 
 # # --> other params config.
 # batch_size_mulitplier=2 # 8
@@ -211,6 +216,7 @@ python3 -u $NMTDIR/train.py \
         -data_format mmem \
         -update_frequency -1 \
         -load_from $LOAD_FROM \
+        -language_classifer_mid_layer_size $gender_mid_layer_size \
         $magic_str $gpu_string_train &> $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log
 
 cp $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log $BASEDIR/model/${name}/${DATE_AND_TIME}_train.log

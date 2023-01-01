@@ -16,6 +16,12 @@ mkdir -p $DATADIR/mustshe/raw/train/masculine/gen_label/sent
 mkdir -p $DATADIR/mustshe/raw/train/masculine/gen_label/word
 mkdir -p $DATADIR/mustshe/raw/train/masculine/gen_label/tok
 
+mkdir -p $DATADIR/mustshe/raw/train/all/zs
+mkdir -p $DATADIR/mustshe/raw/train/all/zs/gen_label
+mkdir -p $DATADIR/mustshe/raw/train/all/zs/gen_label/sent
+mkdir -p $DATADIR/mustshe/raw/train/all/zs/gen_label/work
+mkdir -p $DATADIR/mustshe/raw/train/all/zs/gen_label/tok
+
 mkdir -p $DATADIR/mustshe/raw/valid/all
 mkdir -p $DATADIR/mustshe/raw/valid/all/gen_label
 mkdir -p $DATADIR/mustshe/raw/valid/all/gen_label/sent
@@ -31,6 +37,12 @@ mkdir -p $DATADIR/mustshe/raw/valid/masculine/gen_label
 mkdir -p $DATADIR/mustshe/raw/valid/masculine/gen_label/sent
 mkdir -p $DATADIR/mustshe/raw/valid/masculine/gen_label/word
 mkdir -p $DATADIR/mustshe/raw/valid/masculine/gen_label/tok
+
+mkdir -p $DATADIR/mustshe/raw/valid/all/zs
+mkdir -p $DATADIR/mustshe/raw/valid/all/zs/gen_label
+mkdir -p $DATADIR/mustshe/raw/valid/all/zs/gen_label/sent
+mkdir -p $DATADIR/mustshe/raw/valid/all/zs/gen_label/work
+mkdir -p $DATADIR/mustshe/raw/valid/all/zs/gen_label/tok
 
 python3 -u $NMTDIR/utils/extract_all_mustshe_instances.py \
         -data_dir_path $DATADIR/mustshe/raw/
