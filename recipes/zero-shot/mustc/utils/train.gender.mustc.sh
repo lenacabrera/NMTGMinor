@@ -231,3 +231,5 @@ cp $NMTDIR/../output/${name}/${DATE_AND_TIME}_train.log $BASEDIR/model/${name}/$
 # python3 -u $NMTDIR/average_checkpoints.py $gpu_string_avg \
 #         -models $checkpoints \
 #         -output $BASEDIR/model/${name}/model.pt
+
+# rm -r $BASEDIR/tmp/${name}/
